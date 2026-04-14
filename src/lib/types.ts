@@ -1,16 +1,7 @@
 export type Stage = 'Interesse' | 'Proposta' | 'Negociação' | 'Fechado' | 'Entregue' | 'Upsell'
 export type Platform = 'whatsapp' | 'instagram' | 'facebook' | 'system'
 
-export type PipelineStage =
-  | 'Lead'
-  | 'Prospect'
-  | 'Qualificado'
-  | 'Em Tratativa'
-  | 'Proposta'
-  | 'Negociação'
-  | 'Ativo'
-  | 'Concluído'
-  | 'Inativo'
+export type PipelineStage = string
 
 export const PIPELINE_STAGES: PipelineStage[] = [
   'Lead',

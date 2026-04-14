@@ -513,7 +513,7 @@ export const Constants = {
 // "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
 // Table: calendar_events
 //   id: uuid (not null, default: gen_random_uuid())
-//   user_id: uuid (not null)
+//   user_id: text (not null)
 //   client_id: text (nullable)
 //   title: text (not null)
 //   description: text (nullable)
@@ -545,7 +545,7 @@ export const Constants = {
 //   utm_source: text (nullable)
 //   utm_medium: text (nullable)
 // Table: google_calendar_credentials
-//   user_id: uuid (not null)
+//   user_id: text (not null)
 //   access_token: text (nullable)
 //   refresh_token: text (nullable)
 //   expires_at: bigint (nullable)
@@ -574,7 +574,7 @@ export const Constants = {
 //   audio_url: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 // Table: meta_credentials
-//   user_id: uuid (not null)
+//   user_id: text (not null)
 //   facebook_page_id: text (nullable)
 //   facebook_page_access_token: text (nullable)
 //   instagram_account_id: text (nullable)
@@ -605,14 +605,12 @@ export const Constants = {
 // Table: calendar_events
 //   FOREIGN KEY calendar_events_client_id_fkey: FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
 //   PRIMARY KEY calendar_events_pkey: PRIMARY KEY (id)
-//   FOREIGN KEY calendar_events_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: campaigns
 //   PRIMARY KEY campaigns_pkey: PRIMARY KEY (id)
 // Table: clients
 //   PRIMARY KEY clients_pkey: PRIMARY KEY (id)
 // Table: google_calendar_credentials
 //   PRIMARY KEY google_calendar_credentials_pkey: PRIMARY KEY (user_id)
-//   FOREIGN KEY google_calendar_credentials_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: knowledge_chunks
 //   PRIMARY KEY knowledge_chunks_pkey: PRIMARY KEY (id)
 // Table: message_suggestions
@@ -622,7 +620,6 @@ export const Constants = {
 //   PRIMARY KEY messages_pkey: PRIMARY KEY (id)
 // Table: meta_credentials
 //   PRIMARY KEY meta_credentials_pkey: PRIMARY KEY (user_id)
-//   FOREIGN KEY meta_credentials_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: product_documents
 //   PRIMARY KEY product_documents_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY product_documents_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
@@ -632,9 +629,9 @@ export const Constants = {
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: calendar_events
-//   Policy "Users can manage their own calendar events" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (auth.uid() = user_id)
-//     WITH CHECK: (auth.uid() = user_id)
+//   Policy "Users can manage their own calendar events" (ALL, PERMISSIVE) roles={public}
+//     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 // Table: campaigns
 //   Policy "authenticated_all_campaigns" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -642,9 +639,9 @@ export const Constants = {
 //   Policy "authenticated_all_clients" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: google_calendar_credentials
-//   Policy "Users can manage their own credentials" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (auth.uid() = user_id)
-//     WITH CHECK: (auth.uid() = user_id)
+//   Policy "Users can manage their own credentials" (ALL, PERMISSIVE) roles={public}
+//     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 // Table: knowledge_chunks
 //   Policy "authenticated_insert_chunks" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
@@ -665,9 +662,9 @@ export const Constants = {
 //   Policy "authenticated_select_messages" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: meta_credentials
-//   Policy "Users can manage their own meta credentials" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (auth.uid() = user_id)
-//     WITH CHECK: (auth.uid() = user_id)
+//   Policy "Users can manage their own meta credentials" (ALL, PERMISSIVE) roles={public}
+//     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 // Table: product_documents
 //   Policy "authenticated_all_documents" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true

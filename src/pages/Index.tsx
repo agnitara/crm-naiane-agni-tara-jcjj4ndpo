@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useCRM } from '@/contexts/CRMContext'
-import { PipelineStage, PIPELINE_STAGES } from '@/lib/types'
+import { PipelineStage } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
@@ -13,11 +13,32 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Link } from 'react-router-dom'
-import { Package, Search, Clock, MoreVertical, ArrowRightLeft, PieChart } from 'lucide-react'
+import {
+  Package,
+  Search,
+  Clock,
+  MoreVertical,
+  ArrowRightLeft,
+  PieChart,
+  Settings2,
+  Plus,
+  X,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ChannelMetrics } from '@/components/ChannelMetrics'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +70,7 @@ const getProductBadgeColor = (stage: string) => {
 }
 
 export default function KanbanBoard() {
-  const { clients, products, updateClientStage } = useCRM()
+  const { clients, products, updateClientStage, pipelineStages, updatePipelineStages } = useCRM()
   const [filterProductStage, setFilterProductStage] = useState<string>('all')
   const [filterActivity, setFilterActivity] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -115,6 +136,55 @@ export default function KanbanBoard() {
     updateClientStage(clientId, stage)
   }
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [localStages, setLocalStages] = useState<string[]>([])
+  const [newStageName, setNewStageName] = useState('')
+
+  useEffect(() => {
+    if (isSettingsOpen) {
+      setLocalStages(pipelineStages)
+      setNewStageName('')
+    }
+  }, [isSettingsOpen, pipelineStages])
+
+  const handleAddStage = () => {
+    if (newStageName.trim() && !localStages.includes(newStageName.trim())) {
+      setLocalStages([...localStages, newStageName.trim()])
+      setNewStageName('')
+    }
+  }
+
+  const handleRemoveStage = (stage: string) => {
+    setLocalStages(localStages.filter((s) => s !== stage))
+  }
+
+  const moveStageUp = (index: number) => {
+    if (index > 0) {
+      const newArr = [...localStages]
+      const temp = newArr[index - 1]
+      newArr[index - 1] = newArr[index]
+      newArr[index] = temp
+      setLocalStages(newArr)
+    }
+  }
+
+  const moveStageDown = (index: number) => {
+    if (index < localStages.length - 1) {
+      const newArr = [...localStages]
+      const temp = newArr[index + 1]
+      newArr[index + 1] = newArr[index]
+      newArr[index] = temp
+      setLocalStages(newArr)
+    }
+  }
+
+  const handleSaveStages = () => {
+    if (localStages.length > 0) {
+      updatePipelineStages(localStages)
+      setIsSettingsOpen(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-muted/10 animate-fade-in">
       {/* Header */}
@@ -127,8 +197,92 @@ export default function KanbanBoard() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto items-start lg:items-center">
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="bg-background shrink-0 w-full lg:w-auto">
+                <Settings2 className="h-4 w-4 mr-2" />
+                Personalizar Colunas
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Configurar Colunas do Kanban</DialogTitle>
+                <DialogDescription>
+                  Adicione, remova ou reordene os estágios do seu funil de vendas.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    placeholder="Nome do novo estágio..."
+                    value={newStageName}
+                    onChange={(e) => setNewStageName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddStage()}
+                  />
+                  <Button onClick={handleAddStage} type="button" size="icon" className="shrink-0">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-2">
+                    {localStages.map((stage, idx) => (
+                      <div
+                        key={stage}
+                        className="flex items-center gap-2 bg-muted/50 p-2 rounded-md border"
+                      >
+                        <div className="flex flex-col gap-0.5 mr-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4"
+                            onClick={() => moveStageUp(idx)}
+                            disabled={idx === 0}
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4"
+                            onClick={() => moveStageDown(idx)}
+                            disabled={idx === localStages.length - 1}
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <span className="flex-1 text-sm font-medium">{stage}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRemoveStage(stage)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    {localStages.length === 0 && (
+                      <div className="text-center text-sm text-muted-foreground p-4">
+                        Adicione ao menos um estágio para o seu funil.
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveStages} disabled={localStages.length === 0}>
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <div className="flex w-full lg:w-auto gap-2">
             <div className="relative w-full lg:w-64">
+              {' '}
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar cliente..."
@@ -201,7 +355,7 @@ export default function KanbanBoard() {
       {/* Kanban Area */}
       <ScrollArea className="flex-1 w-full" type="auto">
         <div className="flex gap-4 p-4 lg:p-6 h-full min-h-[500px] items-start snap-x snap-mandatory">
-          {PIPELINE_STAGES.map((stage) => {
+          {pipelineStages.map((stage) => {
             const stageClients = filteredClients.filter((c) => c.pipeline_stage === stage)
             return (
               <div
@@ -280,16 +434,18 @@ export default function KanbanBoard() {
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <ScrollArea className="h-[200px]">
-                                  {PIPELINE_STAGES.filter((s) => s !== stage).map((s) => (
-                                    <DropdownMenuItem
-                                      key={s}
-                                      onClick={() => handleMove(client.id, s)}
-                                      className="text-xs cursor-pointer"
-                                    >
-                                      <ArrowRightLeft className="mr-2 h-3 w-3 text-muted-foreground" />
-                                      {s}
-                                    </DropdownMenuItem>
-                                  ))}
+                                  {pipelineStages
+                                    .filter((s) => s !== stage)
+                                    .map((s) => (
+                                      <DropdownMenuItem
+                                        key={s}
+                                        onClick={() => handleMove(client.id, s)}
+                                        className="text-xs cursor-pointer"
+                                      >
+                                        <ArrowRightLeft className="mr-2 h-3 w-3 text-muted-foreground" />
+                                        {s}
+                                      </DropdownMenuItem>
+                                    ))}
                                 </ScrollArea>
                               </DropdownMenuContent>
                             </DropdownMenu>

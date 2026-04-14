@@ -17,7 +17,7 @@ export async function getClients(): Promise<Client[]> {
     phone: c.phone || '',
     avatar: c.avatar || '',
     status: c.status as 'active' | 'archived',
-    pipeline_stage: (c.pipeline_stage as PipelineStage) || 'Lead',
+    pipeline_stage: c.pipeline_stage || 'Lead',
     createdAt: c.created_at,
     updatedAt: c.updated_at,
   }))

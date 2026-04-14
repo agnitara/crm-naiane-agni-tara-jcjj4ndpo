@@ -22,6 +22,8 @@ interface CRMContextType {
   addClient: (client: any) => Promise<void>
   deleteClientSoft: (clientId: string) => Promise<void>
   updateClientStage: (clientId: string, newStage: PipelineStage) => Promise<void>
+  pipelineStages: string[]
+  updatePipelineStages: (stages: string[]) => Promise<void>
   refreshProducts: () => Promise<void>
   refreshClients: () => Promise<void>
   refreshEvents: () => Promise<void>
@@ -34,6 +36,17 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>([])
   const [interactions, setInteractions] = useState<Interaction[]>(mockInteractions)
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [pipelineStages, setPipelineStages] = useState<string[]>([
+    'Lead',
+    'Prospect',
+    'Qualificado',
+    'Em Tratativa',
+    'Proposta',
+    'Negociação',
+    'Ativo',
+    'Concluído',
+    'Inativo',
+  ])
 
   const refreshEvents = useCallback(async () => {
     try {
@@ -68,6 +81,43 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
+  const refreshSettings = useCallback(async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('pipeline_stages')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (error && error.code !== 'PGRST116') throw error
+      if (data && data.pipeline_stages) {
+        setPipelineStages(data.pipeline_stages)
+      } else {
+        await supabase.from('user_settings').upsert({
+          user_id: user.id,
+          pipeline_stages: [
+            'Lead',
+            'Prospect',
+            'Qualificado',
+            'Em Tratativa',
+            'Proposta',
+            'Negociação',
+            'Ativo',
+            'Concluído',
+            'Inativo',
+          ],
+        })
+      }
+    } catch (e) {
+      console.error('Failed to fetch settings', e)
+    }
+  }, [])
+
   const refreshProducts = useCallback(async () => {
     try {
       const data = await getProducts()
@@ -89,6 +139,7 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   useEffect(() => {
+    refreshSettings()
     refreshClients()
     refreshProducts()
     refreshEvents()
@@ -110,6 +161,26 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
       supabase.removeChannel(channel)
     }
   }, [refreshClients, refreshProducts])
+
+  const updatePipelineStages = async (stages: string[]) => {
+    setPipelineStages(stages)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user) {
+      const { error } = await supabase.from('user_settings').upsert({
+        user_id: user.id,
+        pipeline_stages: stages,
+        updated_at: new Date().toISOString(),
+      })
+      if (error) {
+        toast.error('Erro ao salvar estágios')
+        refreshSettings()
+      } else {
+        toast.success('Estágios atualizados com sucesso')
+      }
+    }
+  }
 
   const updateProductStage = async (productId: string, newStage: Stage) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, stage: newStage } : p)))
@@ -183,6 +254,8 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
           updateClientStage,
           addClient,
           deleteClientSoft,
+          pipelineStages,
+          updatePipelineStages,
           refreshProducts,
           refreshClients,
           refreshEvents,
