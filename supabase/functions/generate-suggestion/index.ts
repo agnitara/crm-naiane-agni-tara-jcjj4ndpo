@@ -1,7 +1,15 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import OpenAI from 'openai'
+import { pipeline, env } from '@xenova/transformers'
 import { corsHeaders } from '../_shared/cors.ts'
+
+// Configuração para rodar modelos locais na Edge
+env.allowLocalModels = false
+env.useBrowserCache = false
+
+// O pipeline é armazenado em cache entre as invocações da Edge Function
+let extractor: any = null
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -18,11 +26,10 @@ Deno.serve(async (req: Request) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
     )
 
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
     const kimiApiKey = Deno.env.get('KIMI_API_KEY')
 
-    if (!openAIApiKey || !kimiApiKey) {
-      // Mock response for preview environments without API keys
+    if (!kimiApiKey) {
+      // Mock response for preview environments sem API keys
       console.log('API keys missing, returning mocked response')
       const mockSuggestion =
         'Olá! Compreendo perfeitamente o seu momento. Segundo o Método Gene da Escolha, o primeiro passo é focar na clareza do que realmente importa para você agora. Que tal agendarmos nossa sessão para aprofundar nisso?'
@@ -53,13 +60,12 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // 1. Generate embedding for user message using OpenAI
-    const openai = new OpenAI({ apiKey: openAIApiKey })
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: content,
-    })
-    const query_embedding = embeddingResponse.data[0].embedding
+    // 1. Gerar embedding da mensagem utilizando o modelo local (gte-small)
+    if (!extractor) {
+      extractor = await pipeline('feature-extraction', 'Supabase/gte-small')
+    }
+    const output = await extractor(content, { pooling: 'mean', normalize: true })
+    const query_embedding = Array.from(output.data)
 
     // 2. Retrieve relevant chunks
     const { data: chunks, error: matchError } = await supabaseClient.rpc('match_knowledge_chunks', {

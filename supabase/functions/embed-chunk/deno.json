@@ -1,6 +1,5 @@
 {
   "imports": {
-    "openai": "npm:openai@4",
     "jsr:@supabase/supabase-js@2": "jsr:@supabase/supabase-js@2",
     "@xenova/transformers": "npm:@xenova/transformers@2.17.1"
   }

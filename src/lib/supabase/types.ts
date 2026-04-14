@@ -9,6 +9,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_events: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          google_calendar_event_id: string | null
+          id: string
+          start_time: string
+          sync_error: string | null
+          sync_status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          google_calendar_event_id?: string | null
+          id?: string
+          start_time: string
+          sync_error?: string | null
+          sync_status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          google_calendar_event_id?: string | null
+          id?: string
+          start_time?: string
+          sync_error?: string | null
+          sync_status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'calendar_events_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       clients: {
         Row: {
           avatar: string | null
@@ -42,6 +95,33 @@ export type Database = {
           pipeline_stage?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      google_calendar_credentials: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          expires_at: number | null
+          refresh_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: number | null
+          refresh_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: number | null
+          refresh_token?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -365,6 +445,19 @@ export const Constants = {
 // --- COLUMN TYPES (actual PostgreSQL types) ---
 // Use this to know the real database type when writing migrations.
 // "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
+// Table: calendar_events
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: uuid (not null)
+//   client_id: text (nullable)
+//   title: text (not null)
+//   description: text (nullable)
+//   start_time: timestamp with time zone (not null)
+//   end_time: timestamp with time zone (not null)
+//   google_calendar_event_id: text (nullable)
+//   sync_status: text (not null, default: 'pending'::text)
+//   sync_error: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: clients
 //   id: text (not null)
 //   name: text (not null)
@@ -373,6 +466,13 @@ export const Constants = {
 //   avatar: text (nullable)
 //   status: text (not null, default: 'active'::text)
 //   pipeline_stage: text (not null, default: 'Lead'::text)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+// Table: google_calendar_credentials
+//   user_id: uuid (not null)
+//   access_token: text (nullable)
+//   refresh_token: text (nullable)
+//   expires_at: bigint (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 // Table: knowledge_chunks
@@ -418,8 +518,15 @@ export const Constants = {
 //   deleted_at: timestamp with time zone (nullable)
 
 // --- CONSTRAINTS ---
+// Table: calendar_events
+//   FOREIGN KEY calendar_events_client_id_fkey: FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+//   PRIMARY KEY calendar_events_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY calendar_events_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: clients
 //   PRIMARY KEY clients_pkey: PRIMARY KEY (id)
+// Table: google_calendar_credentials
+//   PRIMARY KEY google_calendar_credentials_pkey: PRIMARY KEY (user_id)
+//   FOREIGN KEY google_calendar_credentials_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: knowledge_chunks
 //   PRIMARY KEY knowledge_chunks_pkey: PRIMARY KEY (id)
 // Table: message_suggestions
@@ -435,9 +542,17 @@ export const Constants = {
 //   CHECK products_stage_check: CHECK ((stage = ANY (ARRAY['Interesse'::text, 'Proposta'::text, 'Negociação'::text, 'Fechado'::text, 'Entregue'::text, 'Upsell'::text])))
 
 // --- ROW LEVEL SECURITY POLICIES ---
+// Table: calendar_events
+//   Policy "Users can manage their own calendar events" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (auth.uid() = user_id)
+//     WITH CHECK: (auth.uid() = user_id)
 // Table: clients
 //   Policy "authenticated_all_clients" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: google_calendar_credentials
+//   Policy "Users can manage their own credentials" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (auth.uid() = user_id)
+//     WITH CHECK: (auth.uid() = user_id)
 // Table: knowledge_chunks
 //   Policy "authenticated_insert_chunks" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
