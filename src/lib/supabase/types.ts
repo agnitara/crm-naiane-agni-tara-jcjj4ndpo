@@ -9,6 +9,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          pipeline_stage: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          email?: string | null
+          id: string
+          name: string
+          phone?: string | null
+          pipeline_stage?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          pipeline_stage?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       knowledge_chunks: {
         Row: {
           content: string
@@ -329,6 +365,16 @@ export const Constants = {
 // --- COLUMN TYPES (actual PostgreSQL types) ---
 // Use this to know the real database type when writing migrations.
 // "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
+// Table: clients
+//   id: text (not null)
+//   name: text (not null)
+//   email: text (nullable)
+//   phone: text (nullable)
+//   avatar: text (nullable)
+//   status: text (not null, default: 'active'::text)
+//   pipeline_stage: text (not null, default: 'Lead'::text)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: knowledge_chunks
 //   id: uuid (not null, default: gen_random_uuid())
 //   content: text (not null)
@@ -372,6 +418,8 @@ export const Constants = {
 //   deleted_at: timestamp with time zone (nullable)
 
 // --- CONSTRAINTS ---
+// Table: clients
+//   PRIMARY KEY clients_pkey: PRIMARY KEY (id)
 // Table: knowledge_chunks
 //   PRIMARY KEY knowledge_chunks_pkey: PRIMARY KEY (id)
 // Table: message_suggestions
@@ -387,6 +435,9 @@ export const Constants = {
 //   CHECK products_stage_check: CHECK ((stage = ANY (ARRAY['Interesse'::text, 'Proposta'::text, 'Negociação'::text, 'Fechado'::text, 'Entregue'::text, 'Upsell'::text])))
 
 // --- ROW LEVEL SECURITY POLICIES ---
+// Table: clients
+//   Policy "authenticated_all_clients" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: knowledge_chunks
 //   Policy "authenticated_insert_chunks" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true

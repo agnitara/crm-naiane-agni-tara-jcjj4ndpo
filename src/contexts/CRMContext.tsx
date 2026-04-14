@@ -96,8 +96,9 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
 
   const updateClientStage = async (clientId: string, newStage: PipelineStage) => {
     const previous = [...clients]
+    const now = new Date().toISOString()
     setClients((prev) =>
-      prev.map((c) => (c.id === clientId ? { ...c, pipeline_stage: newStage } : c)),
+      prev.map((c) => (c.id === clientId ? { ...c, pipeline_stage: newStage, updatedAt: now } : c)),
     )
     try {
       await updateClientPipelineStage(clientId, newStage)

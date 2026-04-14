@@ -24,6 +24,12 @@ export async function getClients(): Promise<Client[]> {
 }
 
 export async function updateClientPipelineStage(id: string, stage: PipelineStage) {
-  const { error } = await supabase.from('clients').update({ pipeline_stage: stage }).eq('id', id)
+  const { error } = await supabase
+    .from('clients')
+    .update({
+      pipeline_stage: stage,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
   if (error) throw error
 }
