@@ -6,10 +6,12 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react'
-import { Client, Product, Interaction, CalendarEvent, Stage } from '@/lib/types'
-import { mockClients, mockInteractions, mockEvents } from '@/lib/mock-data'
+import { Client, Product, Interaction, CalendarEvent, Stage, PipelineStage } from '@/lib/types'
+import { mockInteractions, mockEvents } from '@/lib/mock-data'
 import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase/client'
 import { getProducts } from '@/services/products'
+import { getClients, updateClientPipelineStage } from '@/services/clients'
 
 interface CRMContextType {
   clients: Client[]
@@ -17,18 +19,29 @@ interface CRMContextType {
   interactions: Interaction[]
   events: CalendarEvent[]
   updateProductStage: (productId: string, newStage: Stage) => void
-  addClient: (client: Omit<Client, 'id' | 'createdAt'>) => void
-  deleteClientSoft: (clientId: string) => void
+  addClient: (client: any) => Promise<void>
+  deleteClientSoft: (clientId: string) => Promise<void>
+  updateClientStage: (clientId: string, newStage: PipelineStage) => Promise<void>
   refreshProducts: () => Promise<void>
+  refreshClients: () => Promise<void>
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined)
 
 export const CRMProvider = ({ children }: { children: ReactNode }) => {
-  const [clients, setClients] = useState<Client[]>(mockClients)
+  const [clients, setClients] = useState<Client[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [interactions, setInteractions] = useState<Interaction[]>(mockInteractions)
   const [events, setEvents] = useState<CalendarEvent[]>(mockEvents)
+
+  const refreshClients = useCallback(async () => {
+    try {
+      const data = await getClients()
+      setClients(data)
+    } catch (e) {
+      console.error('Failed to fetch clients', e)
+    }
+  }, [])
 
   const refreshProducts = useCallback(async () => {
     try {
@@ -51,26 +64,81 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   useEffect(() => {
+    refreshClients()
     refreshProducts()
-  }, [refreshProducts])
 
-  const updateProductStage = (productId: string, newStage: Stage) => {
-    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, stage: newStage } : p)))
-  }
+    const channel = supabase
+      .channel('public:clients_and_products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
+        refreshClients()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        refreshProducts()
+      })
+      .subscribe()
 
-  const addClient = (clientData: Omit<Client, 'id' | 'createdAt'>) => {
-    const newClient: Client = {
-      ...clientData,
-      id: `c${Date.now()}`,
-      createdAt: new Date().toISOString(),
+    return () => {
+      supabase.removeChannel(channel)
     }
-    setClients((prev) => [newClient, ...prev])
-    toast.success('Cliente adicionado com sucesso!')
+  }, [refreshClients, refreshProducts])
+
+  const updateProductStage = async (productId: string, newStage: Stage) => {
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, stage: newStage } : p)))
+    const { error } = await supabase
+      .from('products')
+      .update({ stage: newStage })
+      .eq('id', productId)
+    if (error) {
+      toast.error('Erro ao atualizar produto')
+      refreshProducts()
+    }
   }
 
-  const deleteClientSoft = (clientId: string) => {
+  const updateClientStage = async (clientId: string, newStage: PipelineStage) => {
+    const previous = [...clients]
+    setClients((prev) =>
+      prev.map((c) => (c.id === clientId ? { ...c, pipeline_stage: newStage } : c)),
+    )
+    try {
+      await updateClientPipelineStage(clientId, newStage)
+    } catch (error) {
+      toast.error('Erro ao atualizar estágio do cliente')
+      setClients(previous)
+    }
+  }
+
+  const addClient = async (clientData: any) => {
+    const newId = `c${Date.now()}`
+    const { error } = await supabase.from('clients').insert({
+      id: newId,
+      name: clientData.name,
+      email: clientData.email,
+      phone: clientData.phone,
+      avatar: clientData.avatar,
+      status: clientData.status || 'active',
+      pipeline_stage: clientData.pipeline_stage || 'Lead',
+    })
+    if (!error) {
+      toast.success('Cliente adicionado com sucesso!')
+      refreshClients()
+    } else {
+      toast.error('Erro ao adicionar cliente')
+    }
+  }
+
+  const deleteClientSoft = async (clientId: string) => {
+    const previous = [...clients]
     setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, status: 'archived' } : c)))
-    toast.info('Cliente arquivado. Os produtos foram mantidos para histórico.')
+    const { error } = await supabase
+      .from('clients')
+      .update({ status: 'archived' })
+      .eq('id', clientId)
+    if (error) {
+      toast.error('Erro ao arquivar cliente')
+      setClients(previous)
+    } else {
+      toast.info('Cliente arquivado com sucesso.')
+    }
   }
 
   return (
@@ -81,9 +149,11 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
         interactions,
         events,
         updateProductStage,
+        updateClientStage,
         addClient,
         deleteClientSoft,
         refreshProducts,
+        refreshClients,
       }}
     >
       {children}

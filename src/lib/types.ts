@@ -1,6 +1,29 @@
 export type Stage = 'Interesse' | 'Proposta' | 'Negociação' | 'Fechado' | 'Entregue' | 'Upsell'
 export type Platform = 'whatsapp' | 'instagram' | 'facebook' | 'system'
 
+export type PipelineStage =
+  | 'Lead'
+  | 'Prospect'
+  | 'Qualificado'
+  | 'Em Tratativa'
+  | 'Proposta'
+  | 'Negociação'
+  | 'Ativo'
+  | 'Concluído'
+  | 'Inativo'
+
+export const PIPELINE_STAGES: PipelineStage[] = [
+  'Lead',
+  'Prospect',
+  'Qualificado',
+  'Em Tratativa',
+  'Proposta',
+  'Negociação',
+  'Ativo',
+  'Concluído',
+  'Inativo',
+]
+
 export interface Client {
   id: string
   name: string
@@ -8,7 +31,9 @@ export interface Client {
   phone: string
   avatar: string
   status: 'active' | 'archived'
+  pipeline_stage: PipelineStage
   createdAt: string
+  updatedAt?: string
   notes?: string
 }
 

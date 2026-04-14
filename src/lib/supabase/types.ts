@@ -93,6 +93,83 @@ export type Database = {
         }
         Relationships: []
       }
+      product_documents: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          product_id: string | null
+          size: number
+          type: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          product_id?: string | null
+          size?: number
+          type: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          product_id?: string | null
+          size?: number
+          type?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'product_documents_product_id_fkey'
+            columns: ['product_id']
+            isOneToOne: false
+            referencedRelation: 'products'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      products: {
+        Row: {
+          client_id: string
+          created_at: string
+          deleted_at: string | null
+          expected_date: string
+          id: string
+          name: string
+          stage: string
+          start_date: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          deleted_at?: string | null
+          expected_date: string
+          id?: string
+          name: string
+          stage: string
+          start_date?: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          expected_date?: string
+          id?: string
+          name?: string
+          stage?: string
+          start_date?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -274,6 +351,25 @@ export const Constants = {
 //   transcription: text (nullable)
 //   audio_url: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: product_documents
+//   id: uuid (not null, default: gen_random_uuid())
+//   product_id: uuid (nullable)
+//   name: text (not null)
+//   url: text (not null)
+//   type: text (not null)
+//   size: integer (not null, default: 0)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: products
+//   id: uuid (not null, default: gen_random_uuid())
+//   client_id: text (not null)
+//   name: text (not null)
+//   value: numeric (not null, default: 0)
+//   stage: text (not null)
+//   start_date: timestamp with time zone (not null, default: now())
+//   expected_date: timestamp with time zone (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+//   deleted_at: timestamp with time zone (nullable)
 
 // --- CONSTRAINTS ---
 // Table: knowledge_chunks
@@ -283,6 +379,12 @@ export const Constants = {
 //   CHECK message_suggestions_status_check: CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text, 'edited'::text])))
 // Table: messages
 //   PRIMARY KEY messages_pkey: PRIMARY KEY (id)
+// Table: product_documents
+//   PRIMARY KEY product_documents_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY product_documents_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+// Table: products
+//   PRIMARY KEY products_pkey: PRIMARY KEY (id)
+//   CHECK products_stage_check: CHECK ((stage = ANY (ARRAY['Interesse'::text, 'Proposta'::text, 'Negociação'::text, 'Fechado'::text, 'Entregue'::text, 'Upsell'::text])))
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: knowledge_chunks
@@ -304,6 +406,12 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "authenticated_select_messages" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: product_documents
+//   Policy "authenticated_all_documents" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: products
+//   Policy "authenticated_all_products" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (deleted_at IS NULL)
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION match_knowledge_chunks(vector, double precision, integer)
@@ -323,3 +431,8 @@ export const Constants = {
 //     LIMIT match_count;
 //   $function$
 //
+
+// --- INDEXES ---
+// Table: products
+//   CREATE INDEX products_client_id_idx ON public.products USING btree (client_id)
+//   CREATE INDEX products_stage_idx ON public.products USING btree (stage)
