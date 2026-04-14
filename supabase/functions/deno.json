@@ -1,9 +1,9 @@
 {
   "_versions": {
-    "generate-suggestion": 4,
-    "google-calendar": 2,
-    "embed-chunk": 1,
-    "process-audio": 1,
-    "meta-webhook": 2
+    "generate-suggestion": 6,
+    "google-calendar": 4,
+    "embed-chunk": 3,
+    "process-audio": 3,
+    "meta-webhook": 4
   }
 }
