@@ -352,6 +352,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_settings: {
+        Row: {
+          created_at: string
+          pipeline_stages: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          pipeline_stages?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          pipeline_stages?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -600,6 +621,11 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 //   deleted_at: timestamp with time zone (nullable)
+// Table: user_settings
+//   user_id: text (not null)
+//   pipeline_stages: _text (not null, default: ARRAY['Lead'::text, 'Prospect'::text, 'Qualificado'::text, 'Em Tratativa'::text, 'Proposta'::text, 'Negociação'::text, 'Ativo'::text, 'Concluído'::text, 'Inativo'::text])
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 
 // --- CONSTRAINTS ---
 // Table: calendar_events
@@ -626,6 +652,8 @@ export const Constants = {
 // Table: products
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
 //   CHECK products_stage_check: CHECK ((stage = ANY (ARRAY['Interesse'::text, 'Proposta'::text, 'Negociação'::text, 'Fechado'::text, 'Entregue'::text, 'Upsell'::text])))
+// Table: user_settings
+//   PRIMARY KEY user_settings_pkey: PRIMARY KEY (user_id)
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: calendar_events
@@ -671,6 +699,10 @@ export const Constants = {
 // Table: products
 //   Policy "authenticated_all_products" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (deleted_at IS NULL)
+// Table: user_settings
+//   Policy "Users can manage their own settings" (ALL, PERMISSIVE) roles={public}
+//     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION match_knowledge_chunks(vector, double precision, integer)

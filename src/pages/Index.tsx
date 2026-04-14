@@ -25,6 +25,7 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  Calendar as CalendarIcon,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -47,8 +48,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
-import { differenceInDays } from 'date-fns'
+import { differenceInDays, format, isWithinInterval, startOfDay, endOfDay } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { DateRange } from 'react-day-picker'
 
 const getProductBadgeColor = (stage: string) => {
   switch (stage) {
@@ -72,7 +77,7 @@ const getProductBadgeColor = (stage: string) => {
 export default function KanbanBoard() {
   const { clients, products, updateClientStage, pipelineStages, updatePipelineStages } = useCRM()
   const [filterProductStage, setFilterProductStage] = useState<string>('all')
-  const [filterActivity, setFilterActivity] = useState<string>('all')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [draggedClientId, setDraggedClientId] = useState<string | null>(null)
 
@@ -93,15 +98,19 @@ export default function KanbanBoard() {
         if (!hasProductInStage) return false
       }
 
-      if (filterActivity !== 'all') {
-        const days = differenceInDays(new Date(), new Date(c.updatedAt || c.createdAt))
-        if (filterActivity === 'recent' && days >= 15) return false
-        if (filterActivity === 'stalled' && days < 15) return false
+      if (dateRange?.from) {
+        const clientDate = new Date(c.updatedAt || c.createdAt)
+        const start = startOfDay(dateRange.from)
+        const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from)
+
+        if (!isWithinInterval(clientDate, { start, end })) {
+          return false
+        }
       }
 
       return true
     })
-  }, [clients, products, filterProductStage, filterActivity, searchQuery])
+  }, [clients, products, filterProductStage, dateRange, searchQuery])
 
   const handleDragStart = (e: React.DragEvent, clientId: string) => {
     e.dataTransfer.setData('clientId', clientId)
@@ -307,7 +316,7 @@ export default function KanbanBoard() {
               </SheetContent>
             </Sheet>
           </div>
-          <div className="flex gap-2 w-full overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+          <div className="flex gap-2 w-full overflow-x-auto pb-1 lg:pb-0 scrollbar-none items-center">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" className="hidden lg:flex shrink-0 gap-2 bg-background">
@@ -338,16 +347,57 @@ export default function KanbanBoard() {
                 <SelectItem value="Upsell">Upsell</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterActivity} onValueChange={setFilterActivity}>
-              <SelectTrigger className="w-[150px] bg-background shrink-0">
-                <SelectValue placeholder="Atividade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Qualquer tempo</SelectItem>
-                <SelectItem value="recent">Recentes (&lt;15 dias)</SelectItem>
-                <SelectItem value="stalled">Inativos (≥15 dias)</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant={'outline'}
+                    className={cn(
+                      'w-[260px] justify-start text-left font-normal bg-background',
+                      !dateRange && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} -{' '}
+                          {format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}
+                        </>
+                      ) : (
+                        format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })
+                      )
+                    ) : (
+                      <span>Período (Qualquer tempo)</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+              {dateRange && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDateRange(undefined)}
+                  className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
+                  title="Limpar período"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
