@@ -245,6 +245,36 @@ export type Database = {
         }
         Relationships: []
       }
+      meta_credentials: {
+        Row: {
+          created_at: string
+          facebook_page_access_token: string | null
+          facebook_page_id: string | null
+          instagram_access_token: string | null
+          instagram_account_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          facebook_page_access_token?: string | null
+          facebook_page_id?: string | null
+          instagram_access_token?: string | null
+          instagram_account_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          facebook_page_access_token?: string | null
+          facebook_page_id?: string | null
+          instagram_access_token?: string | null
+          instagram_account_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_documents: {
         Row: {
           created_at: string
@@ -543,6 +573,14 @@ export const Constants = {
 //   transcription: text (nullable)
 //   audio_url: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: meta_credentials
+//   user_id: uuid (not null)
+//   facebook_page_id: text (nullable)
+//   facebook_page_access_token: text (nullable)
+//   instagram_account_id: text (nullable)
+//   instagram_access_token: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: product_documents
 //   id: uuid (not null, default: gen_random_uuid())
 //   product_id: uuid (nullable)
@@ -582,6 +620,9 @@ export const Constants = {
 //   CHECK message_suggestions_status_check: CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text, 'edited'::text])))
 // Table: messages
 //   PRIMARY KEY messages_pkey: PRIMARY KEY (id)
+// Table: meta_credentials
+//   PRIMARY KEY meta_credentials_pkey: PRIMARY KEY (user_id)
+//   FOREIGN KEY meta_credentials_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: product_documents
 //   PRIMARY KEY product_documents_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY product_documents_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
@@ -623,6 +664,10 @@ export const Constants = {
 //     WITH CHECK: true
 //   Policy "authenticated_select_messages" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: meta_credentials
+//   Policy "Users can manage their own meta credentials" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (auth.uid() = user_id)
+//     WITH CHECK: (auth.uid() = user_id)
 // Table: product_documents
 //   Policy "authenticated_all_documents" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
