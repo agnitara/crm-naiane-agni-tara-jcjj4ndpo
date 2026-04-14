@@ -18,7 +18,9 @@ export interface Product {
   name: string
   value: number
   stage: Stage
+  startDate?: string
   expectedDate: string
+  createdAt?: string
 }
 
 export interface Interaction {
@@ -49,5 +51,6 @@ export interface Document {
   name: string
   url: string
   uploadedAt: string
-  type: 'pdf' | 'image' | 'doc'
+  type: string
+  size?: number
 }

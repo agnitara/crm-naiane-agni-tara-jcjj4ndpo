@@ -1,6 +1,6 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCRM } from '@/contexts/CRMContext'
-import { mockDocuments } from '@/lib/mock-data' // importing directly as it's static for now
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,11 +9,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Phone, Mail, MapPin, Calendar, Clock, Send, Mic, PlusCircle } from 'lucide-react'
 import { ClientTimeline } from '@/components/client/ClientTimeline'
 import { ClientProducts } from '@/components/client/ClientProducts'
+import { ProductDialog } from '@/components/client/ProductDialog'
 
 export default function ClientProfile() {
+  const [isNewProductOpen, setIsNewProductOpen] = useState(false)
   const { id } = useParams()
   const navigate = useNavigate()
-  const { clients, interactions, products } = useCRM()
+  const { clients, interactions, products, refreshProducts } = useCRM()
 
   const client = clients.find((c) => c.id === id)
 
@@ -144,11 +146,22 @@ export default function ClientProfile() {
               <h3 className="font-semibold font-display text-sm uppercase tracking-wider text-muted-foreground">
                 Pipeline do Cliente
               </h3>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setIsNewProductOpen(true)}
+              >
                 <PlusCircle className="h-4 w-4" />
               </Button>
             </div>
-            <ClientProducts products={clientProducts} documents={mockDocuments} />
+            <ClientProducts products={clientProducts} clientId={client.id} />
+            <ProductDialog
+              isOpen={isNewProductOpen}
+              onClose={() => setIsNewProductOpen(false)}
+              clientId={client.id}
+              onSuccess={refreshProducts}
+            />
           </TabsContent>
 
           <TabsContent value="info" className="flex-1 overflow-y-auto mt-4 lg:hidden">
