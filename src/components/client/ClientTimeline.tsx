@@ -1,9 +1,11 @@
 import { Interaction, Platform } from '@/lib/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Play, Pause, FileText, CheckCheck } from 'lucide-react'
+import { Play, Pause, FileText, CheckCheck, Sparkles, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { ReplySuggestion } from './ReplySuggestion'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { supabase } from '@/lib/supabase/client'
 
 const platformStyles: Record<
   Platform,
@@ -75,6 +77,30 @@ function TimelineItem({
   const isOutbound = interaction.direction === 'outbound'
   const style = platformStyles[interaction.platform]
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+
+  const handleProcessAudio = async () => {
+    setIsProcessing(true)
+    try {
+      if (interaction.id.length < 10) {
+        await new Promise((r) => setTimeout(r, 1500))
+        toast.success('Áudio processado com sucesso! (Mock)')
+        window.location.reload()
+        return
+      }
+
+      const { error } = await supabase.functions.invoke('process-audio', {
+        body: { message_id: interaction.id },
+      })
+      if (error) throw error
+      toast.success('Áudio processado com sucesso!')
+      setTimeout(() => window.location.reload(), 1000)
+    } catch (e: any) {
+      toast.error('Erro ao processar áudio: ' + e.message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   return (
     <div
@@ -138,13 +164,30 @@ function TimelineItem({
                 </span>
               </div>
 
-              {interaction.transcriptionStatus === 'completed' && (
+              {interaction.transcription && (
                 <div
                   className={`text-xs p-2 rounded-md border-l-2 mt-1 ${isOutbound ? 'border-primary-foreground/50 bg-black/10' : 'border-primary bg-primary/5'}`}
                 >
                   <span className="font-semibold block mb-1 opacity-70">Transcrição:</span>
                   <p className="italic">{interaction.transcription}</p>
                 </div>
+              )}
+
+              {!interaction.transcription && !isOutbound && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-[10px] mt-1 self-start gap-1 px-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                  onClick={handleProcessAudio}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  Analisar IA e Transcrever
+                </Button>
               )}
             </div>
           )}

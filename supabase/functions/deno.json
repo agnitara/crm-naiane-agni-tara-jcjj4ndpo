@@ -2,6 +2,7 @@
   "_versions": {
     "generate-suggestion": 4,
     "google-calendar": 2,
-    "embed-chunk": 1
+    "embed-chunk": 1,
+    "process-audio": 1
   }
 }

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCRM } from '@/contexts/CRMContext'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { supabase } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -25,11 +27,31 @@ import { EventDialog } from '@/components/calendar/EventDialog'
 export default function ClientProfile() {
   const [isNewProductOpen, setIsNewProductOpen] = useState(false)
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
+  const [behavioralData, setBehavioralData] = useState<{
+    profile?: string
+    tags?: string[]
+  } | null>(null)
   const { id } = useParams()
   const navigate = useNavigate()
   const { clients, interactions, products, refreshProducts, refreshEvents } = useCRM()
 
   const client = clients.find((c) => c.id === id)
+
+  useEffect(() => {
+    if (client?.id) {
+      // Fetch behavioral insights dynamically in case they are not in the standard CRM context fetch
+      supabase
+        .from('clients')
+        .select('behavioral_profile, sentiment_tags')
+        .eq('id', client.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setBehavioralData({ profile: data.behavioral_profile, tags: data.sentiment_tags })
+          }
+        })
+    }
+  }, [client?.id])
 
   if (!client) {
     return (
@@ -82,7 +104,7 @@ export default function ClientProfile() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-subtle border-none flex-1">
+        <Card className="shadow-subtle border-none">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-display flex items-center justify-between">
               Anotações Fixadas
@@ -94,6 +116,36 @@ export default function ClientProfile() {
           <CardContent>
             <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg italic border-l-2 border-primary">
               {client.notes || 'Nenhuma anotação estratégica registrada ainda.'}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-subtle border-none flex-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-display flex items-center justify-between text-purple-600 dark:text-purple-400">
+              Análise Comportamental IA
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {behavioralData?.tags?.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 border-none"
+                >
+                  {tag}
+                </Badge>
+              ))}
+              {(!behavioralData?.tags || behavioralData.tags.length === 0) && (
+                <span className="text-xs text-muted-foreground">
+                  Nenhuma tag de sentimento gerada.
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border-l-2 border-purple-500">
+              {behavioralData?.profile ||
+                'Nenhum perfil comportamental gerado. Processe um áudio do cliente para análise.'}
             </p>
           </CardContent>
         </Card>

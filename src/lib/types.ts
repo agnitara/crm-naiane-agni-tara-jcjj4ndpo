@@ -35,6 +35,8 @@ export interface Client {
   createdAt: string
   updatedAt?: string
   notes?: string
+  behavioral_profile?: string
+  sentiment_tags?: string[]
 }
 
 export interface Product {
