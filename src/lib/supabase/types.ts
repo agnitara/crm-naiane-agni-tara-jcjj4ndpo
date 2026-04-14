@@ -313,6 +313,30 @@ export type Database = {
           },
         ]
       }
+      product_types: {
+        Row: {
+          created_at: string
+          default_value: number
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          default_value?: number
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          default_value?: number
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           client_id: string
@@ -610,6 +634,12 @@ export const Constants = {
 //   type: text (not null)
 //   size: integer (not null, default: 0)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: product_types
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   description: text (nullable)
+//   default_value: numeric (not null, default: 0)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: products
 //   id: uuid (not null, default: gen_random_uuid())
 //   client_id: text (not null)
@@ -649,6 +679,9 @@ export const Constants = {
 // Table: product_documents
 //   PRIMARY KEY product_documents_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY product_documents_product_id_fkey: FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+// Table: product_types
+//   UNIQUE product_types_name_key: UNIQUE (name)
+//   PRIMARY KEY product_types_pkey: PRIMARY KEY (id)
 // Table: products
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
 //   CHECK products_stage_check: CHECK ((stage = ANY (ARRAY['Interesse'::text, 'Proposta'::text, 'Negociação'::text, 'Fechado'::text, 'Entregue'::text, 'Upsell'::text])))
@@ -696,6 +729,9 @@ export const Constants = {
 // Table: product_documents
 //   Policy "authenticated_all_documents" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: product_types
+//   Policy "authenticated_all_product_types" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: products
 //   Policy "authenticated_all_products" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (deleted_at IS NULL)
@@ -724,6 +760,8 @@ export const Constants = {
 //
 
 // --- INDEXES ---
+// Table: product_types
+//   CREATE UNIQUE INDEX product_types_name_key ON public.product_types USING btree (name)
 // Table: products
 //   CREATE INDEX products_client_id_idx ON public.products USING btree (client_id)
 //   CREATE INDEX products_stage_idx ON public.products USING btree (stage)

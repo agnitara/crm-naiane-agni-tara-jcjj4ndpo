@@ -44,13 +44,15 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
   const handleAdd = async () => {
     if (!name) return
     try {
-      await createProductType({ name, default_value: Number(value) || 0 })
+      const numericValue = value ? parseFloat(value.toString().replace(',', '.')) : 0
+      await createProductType({ name, default_value: numericValue })
       toast.success('Tipo de produto adicionado')
       setName('')
       setValue('')
       fetchTypes()
-    } catch (e) {
-      toast.error('Erro ao adicionar tipo de produto. Pode já existir.')
+    } catch (e: any) {
+      console.error('Error adding product type:', e)
+      toast.error(`Erro ao adicionar tipo de produto: ${e.message || 'Pode já existir.'}`)
     }
   }
 
@@ -81,6 +83,7 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
           <div className="w-32 space-y-1">
             <Input
               type="number"
+              step="0.01"
               placeholder="Valor (R$)"
               value={value}
               onChange={(e) => setValue(e.target.value)}

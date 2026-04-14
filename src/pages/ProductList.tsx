@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Search, ArrowRight, PackageSearch, Loader2, Settings, Plus } from 'lucide-react'
+import { Search, ArrowRight, PackageSearch, Loader2, Settings, Plus, Edit2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Select,
@@ -34,6 +34,7 @@ export default function ProductList() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [isTypesOpen, setIsTypesOpen] = useState(false)
   const [isNewProductOpen, setIsNewProductOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<any>(null)
 
   useEffect(() => {
     fetchProducts()
@@ -209,13 +210,33 @@ export default function ProductList() {
                         : '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      {product.clients?.id && (
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/clientes/${product.clients.id}`}>
-                            Ver Cliente <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
+                      <div className="flex justify-end items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditingProduct({
+                              id: product.id,
+                              clientId: product.client_id,
+                              name: product.name,
+                              value: product.value,
+                              stage: product.stage,
+                              startDate: product.start_date,
+                              expectedDate: product.expected_date,
+                            })
+                          }}
+                          title="Editar Produto"
+                        >
+                          <Edit2 className="h-4 w-4" />
                         </Button>
-                      )}
+                        {product.clients?.id && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/clientes/${product.clients.id}`}>
+                              Ver Cliente <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -227,8 +248,12 @@ export default function ProductList() {
 
       <ProductTypesDialog isOpen={isTypesOpen} onClose={() => setIsTypesOpen(false)} />
       <ProductDialog
-        isOpen={isNewProductOpen}
-        onClose={() => setIsNewProductOpen(false)}
+        isOpen={isNewProductOpen || !!editingProduct}
+        onClose={() => {
+          setIsNewProductOpen(false)
+          setEditingProduct(null)
+        }}
+        product={editingProduct}
         onSuccess={fetchProducts}
       />
     </div>
