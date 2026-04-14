@@ -1,6 +1,7 @@
 {
   "_versions": {
-    "generate-suggestion": 3,
-    "google-calendar": 2
+    "generate-suggestion": 4,
+    "google-calendar": 2,
+    "embed-chunk": 1
   }
 }
