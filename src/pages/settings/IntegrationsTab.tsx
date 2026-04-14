@@ -87,7 +87,14 @@ export function IntegrationsTab() {
       toast.success('Credenciais do Facebook salvas com sucesso!')
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
-      toast.error(`Erro: ${error?.message || 'Falha ao salvar credenciais do Facebook'}`)
+      const msg = error?.message || ''
+      if (msg.includes('invalid input syntax')) {
+        toast.error('Erro de validação do usuário. Por favor, tente novamente mais tarde.')
+      } else {
+        toast.error(
+          'Falha ao salvar credenciais do Facebook. Verifique se o ID e Token são válidos.',
+        )
+      }
     } finally {
       setIsSavingFb(false)
     }
@@ -126,7 +133,14 @@ export function IntegrationsTab() {
       toast.success('Credenciais do Instagram salvas com sucesso!')
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
-      toast.error(`Erro: ${error?.message || 'Falha ao salvar credenciais do Instagram'}`)
+      const msg = error?.message || ''
+      if (msg.includes('invalid input syntax')) {
+        toast.error('Erro de validação do usuário. Por favor, tente novamente mais tarde.')
+      } else {
+        toast.error(
+          'Falha ao salvar credenciais do Instagram. Verifique se o ID e Token são válidos.',
+        )
+      }
     } finally {
       setIsSavingIg(false)
     }
