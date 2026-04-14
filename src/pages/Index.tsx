@@ -13,9 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Link } from 'react-router-dom'
-import { Package, Search, Clock, MoreVertical, ArrowRightLeft } from 'lucide-react'
+import { Package, Search, Clock, MoreVertical, ArrowRightLeft, PieChart } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { ChannelMetrics } from '@/components/ChannelMetrics'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -124,17 +126,50 @@ export default function KanbanBoard() {
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto">
-          <div className="relative w-full lg:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar cliente..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-background w-full"
-            />
+        <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto items-start lg:items-center">
+          <div className="flex w-full lg:w-auto gap-2">
+            <div className="relative w-full lg:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar cliente..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-background w-full"
+              />
+            </div>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="shrink-0 lg:hidden bg-background">
+                  <PieChart className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Dashboard de Canais</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6 h-full">
+                  <ChannelMetrics />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
           <div className="flex gap-2 w-full overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="hidden lg:flex shrink-0 gap-2 bg-background">
+                  <PieChart className="h-4 w-4" />
+                  Métricas
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Dashboard de Canais</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <ChannelMetrics />
+                </div>
+              </SheetContent>
+            </Sheet>
             <Select value={filterProductStage} onValueChange={setFilterProductStage}>
               <SelectTrigger className="w-[160px] bg-background shrink-0">
                 <SelectValue placeholder="Estágio Produto" />
