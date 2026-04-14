@@ -6,16 +6,28 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Phone, Mail, MapPin, Calendar, Clock, Send, Mic, PlusCircle } from 'lucide-react'
+import {
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  Clock,
+  Send,
+  Mic,
+  PlusCircle,
+  CalendarPlus,
+} from 'lucide-react'
 import { ClientTimeline } from '@/components/client/ClientTimeline'
 import { ClientProducts } from '@/components/client/ClientProducts'
 import { ProductDialog } from '@/components/client/ProductDialog'
+import { EventDialog } from '@/components/calendar/EventDialog'
 
 export default function ClientProfile() {
   const [isNewProductOpen, setIsNewProductOpen] = useState(false)
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false)
   const { id } = useParams()
   const navigate = useNavigate()
-  const { clients, interactions, products, refreshProducts } = useCRM()
+  const { clients, interactions, products, refreshProducts, refreshEvents } = useCRM()
 
   const client = clients.find((c) => c.id === id)
 
@@ -60,6 +72,13 @@ export default function ClientProfile() {
                 <span>Cliente desde {new Date(client.createdAt).getFullYear()}</span>
               </div>
             </div>
+            <Button
+              variant="outline"
+              className="w-full mt-4 gap-2"
+              onClick={() => setIsEventDialogOpen(true)}
+            >
+              <CalendarPlus className="h-4 w-4" /> Agendar Reunião
+            </Button>
           </CardContent>
         </Card>
 
@@ -163,6 +182,16 @@ export default function ClientProfile() {
               onSuccess={refreshProducts}
             />
           </TabsContent>
+
+          <EventDialog
+            isOpen={isEventDialogOpen}
+            onClose={() => setIsEventDialogOpen(false)}
+            onSuccess={() => {
+              setIsEventDialogOpen(false)
+              refreshEvents()
+            }}
+            defaultClientId={client.id}
+          />
 
           <TabsContent value="info" className="flex-1 overflow-y-auto mt-4 lg:hidden">
             {/* Duplicate info block for mobile tab view to keep DOM simple, normally abstracted */}

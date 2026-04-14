@@ -65,9 +65,13 @@ export interface CalendarEvent {
   id: string
   title: string
   date: string
+  endDate?: string
   clientId?: string
   googleCalendarId?: string
   type: 'meeting' | 'deadline'
+  description?: string
+  syncStatus?: 'pending' | 'synced' | 'failed'
+  notified?: boolean
 }
 
 export interface Document {

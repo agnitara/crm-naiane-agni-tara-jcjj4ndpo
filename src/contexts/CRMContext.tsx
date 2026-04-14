@@ -24,6 +24,7 @@ interface CRMContextType {
   updateClientStage: (clientId: string, newStage: PipelineStage) => Promise<void>
   refreshProducts: () => Promise<void>
   refreshClients: () => Promise<void>
+  refreshEvents: () => Promise<void>
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined)
@@ -32,7 +33,31 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
   const [clients, setClients] = useState<Client[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [interactions, setInteractions] = useState<Interaction[]>(mockInteractions)
-  const [events, setEvents] = useState<CalendarEvent[]>(mockEvents)
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+
+  const refreshEvents = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('calendar_events').select('*')
+      if (error) throw error
+      if (data) {
+        setEvents(
+          data.map((e) => ({
+            id: e.id,
+            title: e.title,
+            date: e.start_time,
+            endDate: e.end_time,
+            clientId: e.client_id || undefined,
+            googleCalendarId: e.google_calendar_event_id || undefined,
+            type: 'meeting',
+            description: e.description || undefined,
+            syncStatus: e.sync_status as any,
+          })),
+        )
+      }
+    } catch (e) {
+      console.error('Failed to fetch events', e)
+    }
+  }, [])
 
   const refreshClients = useCallback(async () => {
     try {
@@ -66,6 +91,7 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     refreshClients()
     refreshProducts()
+    refreshEvents()
 
     const channel = supabase
       .channel('public:clients_and_products')
@@ -74,6 +100,9 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
         refreshProducts()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'calendar_events' }, () => {
+        refreshEvents()
       })
       .subscribe()
 
@@ -144,18 +173,21 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <CRMContext.Provider
-      value={{
-        clients,
-        products,
-        interactions,
-        events,
-        updateProductStage,
-        updateClientStage,
-        addClient,
-        deleteClientSoft,
-        refreshProducts,
-        refreshClients,
-      }}
+      value={
+        {
+          clients,
+          products,
+          interactions,
+          events,
+          updateProductStage,
+          updateClientStage,
+          addClient,
+          deleteClientSoft,
+          refreshProducts,
+          refreshClients,
+          refreshEvents,
+        } as any
+      }
     >
       {children}
     </CRMContext.Provider>
