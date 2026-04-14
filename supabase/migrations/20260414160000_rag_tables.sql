@@ -30,21 +30,18 @@ RETURNS TABLE (
   metadata jsonb,
   similarity float
 )
-LANGUAGE plpgsql
+LANGUAGE sql STABLE
 AS $$
-BEGIN
-  RETURN QUERY
   SELECT
     kc.id,
     kc.content,
     kc.metadata,
-    1 - (kc.embedding <=> query_embedding) AS similarity
+    (1 - (kc.embedding <=> query_embedding))::float AS similarity
   FROM public.knowledge_chunks kc
   WHERE 1 - (kc.embedding <=> query_embedding) > match_threshold
   ORDER BY kc.embedding <=> query_embedding
   LIMIT match_count;
-END;
-$;
+$$;
 
 -- Suggestions tracking
 CREATE TABLE IF NOT EXISTS public.message_suggestions (
