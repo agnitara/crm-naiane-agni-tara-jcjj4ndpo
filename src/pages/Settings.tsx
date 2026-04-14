@@ -4,11 +4,12 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { UserCircle, Link as LinkIcon, BellRing, Save } from 'lucide-react'
+import { UserCircle, Link as LinkIcon, BellRing, Save, Megaphone, Plus, Trash2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase/client'
 
 export default function Settings() {
   const [fbConnected, setFbConnected] = useState(false)
@@ -16,31 +17,92 @@ export default function Settings() {
   const [igConnected, setIgConnected] = useState(true)
   const [waConnected, setWaConnected] = useState(true)
 
+  const [campaigns, setCampaigns] = useState<any[]>([])
+  const [newCampaignName, setNewCampaignName] = useState('')
+  const [loadingCampaigns, setLoadingCampaigns] = useState(false)
+
+  useEffect(() => {
+    fetchCampaigns()
+  }, [])
+
+  const fetchCampaigns = async () => {
+    setLoadingCampaigns(true)
+    try {
+      const { data, error } = await supabase
+        .from('campaigns' as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (!error && data) {
+        setCampaigns(data)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    setLoadingCampaigns(false)
+  }
+
+  const handleAddCampaign = async () => {
+    if (!newCampaignName.trim()) return
+    try {
+      const { data, error } = await supabase
+        .from('campaigns' as any)
+        .insert({ name: newCampaignName, status: 'active' })
+        .select()
+        .single()
+
+      if (!error && data) {
+        setCampaigns([data, ...campaigns])
+        setNewCampaignName('')
+        toast.success('Campanha adicionada com sucesso!')
+      } else {
+        toast.error('Erro ao adicionar campanha.')
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleDeleteCampaign = async (id: string) => {
+    try {
+      await supabase
+        .from('campaigns' as any)
+        .delete()
+        .eq('id', id)
+      setCampaigns(campaigns.filter((c) => c.id !== id))
+      toast.success('Campanha removida!')
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const handleConnectFb = () => {
     setIsConnectingFb(true)
-    // Simula o fluxo de conexão OAuth com a API da Meta
     setTimeout(() => {
       setFbConnected(true)
       setIsConnectingFb(false)
       toast.success('Facebook Messenger conectado via Meta API!')
     }, 1500)
   }
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-4xl mx-auto pb-12">
       <div>
         <h2 className="text-2xl font-display font-bold tracking-tight">Configurações</h2>
         <p className="text-sm text-muted-foreground">
-          Gerencie sua conta e integrações da plataforma.
+          Gerencie sua conta, integrações da plataforma e rastreamento de anúncios.
         </p>
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-3 bg-muted/50">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4 bg-muted/50">
           <TabsTrigger value="profile" className="data-[state=active]:bg-background">
             <UserCircle className="w-4 h-4 mr-2 hidden sm:block" /> Perfil
           </TabsTrigger>
           <TabsTrigger value="integrations" className="data-[state=active]:bg-background">
             <LinkIcon className="w-4 h-4 mr-2 hidden sm:block" /> Integrações
+          </TabsTrigger>
+          <TabsTrigger value="campaigns" className="data-[state=active]:bg-background">
+            <Megaphone className="w-4 h-4 mr-2 hidden sm:block" /> Campanhas
           </TabsTrigger>
           <TabsTrigger value="notifications" className="data-[state=active]:bg-background">
             <BellRing className="w-4 h-4 mr-2 hidden sm:block" /> Alertas
@@ -160,27 +222,68 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          <Card className="shadow-subtle border-none mt-6">
+        <TabsContent value="campaigns" className="mt-6">
+          <Card className="shadow-subtle border-none">
             <CardHeader>
-              <CardTitle className="font-display">Integrações de Ferramentas</CardTitle>
+              <CardTitle className="font-display">Rastreamento de Campanhas</CardTitle>
+              <CardDescription>
+                Cadastre suas campanhas ativas para rastrear a origem dos leads (UTM Campaign).
+                Esses dados alimentarão o Dashboard de Canais.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                <div>
-                  <p className="font-medium">Google Calendar</p>
-                  <p className="text-xs text-muted-foreground">Sincroniza reuniões e deadlines</p>
+            <CardContent className="space-y-6">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Nome da nova campanha (ex: Lançamento Maio)"
+                    value={newCampaignName}
+                    onChange={(e) => setNewCampaignName(e.target.value)}
+                    className="bg-muted/30"
+                  />
                 </div>
-                <Badge className="bg-emerald-500 hover:bg-emerald-600">Ativo</Badge>
+                <Button onClick={handleAddCampaign} className="shrink-0 gap-2">
+                  <Plus className="h-4 w-4" /> Adicionar
+                </Button>
               </div>
-              <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                <div>
-                  <p className="font-medium">OpenAI Whisper (Áudio)</p>
-                  <p className="text-xs text-muted-foreground">
-                    Transcreve áudios do WhatsApp automaticamente
-                  </p>
-                </div>
-                <Badge className="bg-emerald-500 hover:bg-emerald-600">Ativo</Badge>
+
+              <div className="space-y-3 mt-6">
+                <h3 className="text-sm font-medium text-muted-foreground">Campanhas Ativas</h3>
+                {loadingCampaigns ? (
+                  <div className="text-sm text-muted-foreground animate-pulse">Carregando...</div>
+                ) : campaigns.length === 0 ? (
+                  <div className="p-4 border border-dashed rounded-lg text-center text-sm text-muted-foreground">
+                    Nenhuma campanha cadastrada.
+                  </div>
+                ) : (
+                  <div className="grid gap-3">
+                    {campaigns.map((campaign) => (
+                      <div
+                        key={campaign.id}
+                        className="flex items-center justify-between p-3 border rounded-lg bg-card"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                          <span className="font-medium text-sm">{campaign.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="secondary" className="text-[10px]">
+                            {new Date(campaign.created_at).toLocaleDateString('pt-BR')}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteCampaign(campaign.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

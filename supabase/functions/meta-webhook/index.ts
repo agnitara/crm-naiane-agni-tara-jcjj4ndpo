@@ -84,6 +84,20 @@ Deno.serve(async (req: Request) => {
                 .maybeSingle()
 
               if (!existingClient) {
+                // Check for referral/ad data
+                const referral = event.message?.referral || event.referral
+                let utmSource = platform
+                let utmCampaign = null
+
+                if (referral) {
+                  utmSource = referral.source || platform
+                  if (referral.ad_id) {
+                    utmCampaign = `Ad ${referral.ad_id}`
+                  } else if (referral.ref) {
+                    utmCampaign = referral.ref
+                  }
+                }
+
                 // If it's a new lead from Meta, we create a placeholder client record
                 const shortId = String(senderId).substring(0, 5)
                 const name = `Lead ${platform.charAt(0).toUpperCase() + platform.slice(1)} (${shortId})`
@@ -94,6 +108,8 @@ Deno.serve(async (req: Request) => {
                   status: 'active',
                   pipeline_stage: 'Lead',
                   sentiment_tags: [],
+                  utm_source: utmSource,
+                  utm_campaign: utmCampaign,
                 })
               }
 

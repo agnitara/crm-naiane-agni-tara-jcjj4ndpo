@@ -37,6 +37,16 @@ export interface Client {
   notes?: string
   behavioral_profile?: string
   sentiment_tags?: string[]
+  utm_source?: string
+  utm_campaign?: string
+  utm_medium?: string
+}
+
+export interface Campaign {
+  id: string
+  name: string
+  status: 'active' | 'inactive'
+  createdAt: string
 }
 
 export interface Product {
