@@ -2,6 +2,8 @@ import { Interaction, Platform } from '@/lib/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Play, Pause, FileText, CheckCheck } from 'lucide-react'
 import { useState } from 'react'
+import { ReplySuggestion } from './ReplySuggestion'
+import { toast } from 'sonner'
 
 const platformStyles: Record<
   Platform,
@@ -87,7 +89,9 @@ function TimelineItem({
         <AvatarFallback>{isOutbound ? 'NA' : clientName.substring(0, 2)}</AvatarFallback>
       </Avatar>
 
-      <div className={`flex flex-col max-w-[85%] ${isOutbound ? 'items-end' : 'items-start'}`}>
+      <div
+        className={`flex flex-col w-full max-w-[85%] ${isOutbound ? 'items-end' : 'items-start'}`}
+      >
         <div className="flex items-center gap-2 mb-1">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
             {new Intl.DateTimeFormat('pt-BR', {
@@ -164,6 +168,16 @@ function TimelineItem({
             </div>
           )}
         </div>
+
+        {!isOutbound && (
+          <ReplySuggestion
+            messageId={interaction.id}
+            content={interaction.transcription || interaction.content}
+            onSend={(text) => {
+              toast.success('Mensagem enviada com sucesso!')
+            }}
+          />
+        )}
       </div>
     </div>
   )
