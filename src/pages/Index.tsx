@@ -411,6 +411,42 @@ export default function KanbanBoard() {
         </div>
       </div>
 
+      {/* Metrics Dashboard */}
+      <div className="flex-none px-4 lg:px-6 pt-4 pb-1 border-b bg-muted/5 shadow-inner">
+        <ScrollArea className="w-full whitespace-nowrap" type="auto">
+          <div className="flex w-max space-x-4 pb-3">
+            <Card className="w-[140px] shrink-0 p-3 shadow-sm border-primary/20 bg-primary/5">
+              <div className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider truncate">
+                Total Filtrado
+              </div>
+              <div className="text-2xl font-bold font-display mt-0.5 text-primary">
+                {filteredClients.length}
+              </div>
+            </Card>
+            {pipelineStages.map((stage) => {
+              const count = filteredClients.filter((c) => c.pipeline_stage === stage).length
+              return (
+                <Card
+                  key={stage}
+                  className="w-[140px] shrink-0 p-3 shadow-sm bg-background border-border/50"
+                >
+                  <div
+                    className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider truncate"
+                    title={stage}
+                  >
+                    {stage}
+                  </div>
+                  <div className="text-2xl font-bold font-display mt-0.5 text-foreground/90">
+                    {count}
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+          <ScrollBar orientation="horizontal" className="h-1.5" />
+        </ScrollArea>
+      </div>
+
       {/* Kanban Area */}
       <ScrollArea className="flex-1 w-full" type="auto">
         <div className="flex gap-4 p-4 lg:p-6 h-full min-h-[500px] items-start snap-x snap-mandatory">
