@@ -1,5 +1,6 @@
 {
   "_versions": {
-    "generate-suggestion": 2
+    "generate-suggestion": 2,
+    "google-calendar": 1
   }
 }
