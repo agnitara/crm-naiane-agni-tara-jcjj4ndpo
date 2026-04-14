@@ -1,12 +1,21 @@
-import { Bell, Search, Plus } from 'lucide-react'
+import { Bell, Search, Plus, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useLocation } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const routeNames: Record<string, string> = {
-  '/': 'Dashboard Estratégico',
+  '/dashboard': 'Dashboard Estratégico',
   '/clientes': 'Gestão de Clientes',
   '/produtos': 'Pipeline de Produtos',
   '/calendario': 'Agenda & Sincronização',
@@ -16,6 +25,7 @@ const routeNames: Record<string, string> = {
 export function Header() {
   const location = useLocation()
   const title = routeNames[location.pathname] || 'Detalhes do Cliente'
+  const { signOut, user } = useAuth()
 
   return (
     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4 shadow-sm sm:px-6">
@@ -39,13 +49,35 @@ export function Header() {
             <Plus className="h-4 w-4" />
             <span>Novo Registro</span>
           </Button>
-          <Avatar className="h-9 w-9 border-2 border-primary/20 cursor-pointer hover:border-primary transition-colors">
-            <AvatarImage
-              src="https://img.usecurling.com/ppl/thumbnail?gender=female&seed=99"
-              alt="Naiane"
-            />
-            <AvatarFallback>NA</AvatarFallback>
-          </Avatar>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Avatar className="h-9 w-9 border-2 border-primary/20 cursor-pointer hover:border-primary transition-colors">
+                <AvatarImage
+                  src="https://img.usecurling.com/ppl/thumbnail?gender=female&seed=99"
+                  alt={user?.email || 'Usuário'}
+                />
+                <AvatarFallback>
+                  {user?.email?.substring(0, 2).toUpperCase() || 'NA'}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-muted-foreground truncate" disabled>
+                {user?.email}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={signOut}
+                className="text-destructive focus:text-destructive cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair do sistema
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
