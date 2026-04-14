@@ -23,6 +23,23 @@ export async function getClients(): Promise<Client[]> {
   }))
 }
 
+export async function createClient(data: { name: string; email?: string; phone?: string }) {
+  const { data: result, error } = await supabase
+    .from('clients')
+    .insert({
+      id: crypto.randomUUID(),
+      name: data.name,
+      email: data.email || null,
+      phone: data.phone || null,
+      pipeline_stage: 'Lead',
+      status: 'active',
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return result
+}
+
 export async function updateClientPipelineStage(id: string, stage: PipelineStage) {
   const { error } = await supabase
     .from('clients')

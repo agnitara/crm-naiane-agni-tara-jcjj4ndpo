@@ -1,10 +1,20 @@
 import { useState } from 'react'
 import { useCRM } from '@/contexts/CRMContext'
 import { Link } from 'react-router-dom'
-import { Search, MoreVertical, ShieldAlert } from 'lucide-react'
+import { Search, MoreVertical, ShieldAlert, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { createClient } from '@/services/clients'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import {
@@ -29,6 +39,12 @@ export default function ClientList() {
   const [search, setSearch] = useState('')
   const [clientToDelete, setClientToDelete] = useState<string | null>(null)
 
+  const [isNewClientOpen, setIsNewClientOpen] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
+  const [newClientEmail, setNewClientEmail] = useState('')
+  const [newClientPhone, setNewClientPhone] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+
   const activeClients = clients.filter(
     (c) => c.status === 'active' && c.name.toLowerCase().includes(search.toLowerCase()),
   )
@@ -37,6 +53,31 @@ export default function ClientList() {
     if (clientToDelete) {
       deleteClientSoft(clientToDelete)
       setClientToDelete(null)
+    }
+  }
+
+  const handleCreateClient = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newClientName.trim()) return
+
+    try {
+      setIsCreating(true)
+      const newClient = await createClient({
+        name: newClientName,
+        email: newClientEmail,
+        phone: newClientPhone,
+      })
+      toast.success('Cliente criado com sucesso!')
+      setIsNewClientOpen(false)
+      // Small delay to allow the user to see the success before redirect
+      setTimeout(() => {
+        window.location.href = `/clientes/${newClient.id}`
+      }, 500)
+    } catch (error) {
+      toast.error('Erro ao criar cliente')
+      console.error(error)
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -59,7 +100,9 @@ export default function ClientList() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button className="shrink-0 shadow-elevation">Novo Cliente</Button>
+          <Button onClick={() => setIsNewClientOpen(true)} className="shrink-0 shadow-elevation">
+            <Plus className="mr-2 h-4 w-4" /> Novo Cliente
+          </Button>
         </div>
       </div>
 
@@ -189,6 +232,57 @@ export default function ClientList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isNewClientOpen} onOpenChange={setIsNewClientOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleCreateClient}>
+            <DialogHeader>
+              <DialogTitle>Novo Cliente</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Nome <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  placeholder="Ex: João Silva"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newClientEmail}
+                  onChange={(e) => setNewClientEmail(e.target.value)}
+                  placeholder="joao@exemplo.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone / WhatsApp</Label>
+                <Input
+                  id="phone"
+                  value={newClientPhone}
+                  onChange={(e) => setNewClientPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsNewClientOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isCreating || !newClientName.trim()}>
+                {isCreating ? 'Salvando...' : 'Salvar Cliente'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
