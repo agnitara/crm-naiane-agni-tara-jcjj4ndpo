@@ -23,7 +23,10 @@ interface CRMContextType {
   deleteClientSoft: (clientId: string) => Promise<void>
   updateClientStage: (clientId: string, newStage: PipelineStage) => Promise<void>
   pipelineStages: string[]
-  updatePipelineStages: (stages: string[]) => Promise<void>
+  updatePipelineStages: (
+    stages: string[],
+    renames?: { oldName: string; newName: string }[],
+  ) => Promise<void>
   refreshProducts: () => Promise<void>
   refreshClients: () => Promise<void>
   refreshEvents: () => Promise<void>
@@ -157,8 +160,24 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [refreshClients, refreshProducts, refreshEvents, refreshSettings])
 
-  const updatePipelineStages = async (stages: string[]) => {
+  const updatePipelineStages = async (
+    stages: string[],
+    renames?: { oldName: string; newName: string }[],
+  ) => {
     setPipelineStages(stages)
+
+    if (renames && renames.length > 0) {
+      setClients((prev) =>
+        prev.map((c) => {
+          const rename = renames.find((r) => r.oldName === c.pipeline_stage)
+          if (rename) {
+            return { ...c, pipeline_stage: rename.newName }
+          }
+          return c
+        }),
+      )
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -171,6 +190,16 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
         },
         { onConflict: 'user_id' },
       )
+
+      if (renames && renames.length > 0) {
+        for (const r of renames) {
+          await supabase
+            .from('clients')
+            .update({ pipeline_stage: r.newName })
+            .eq('pipeline_stage', r.oldName)
+        }
+      }
+
       if (error) {
         toast.error('Erro ao salvar estágios')
         refreshSettings()

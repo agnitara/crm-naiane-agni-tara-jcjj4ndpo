@@ -155,25 +155,36 @@ export default function KanbanBoard() {
   }
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [localStages, setLocalStages] = useState<string[]>([])
+  const [localStages, setLocalStages] = useState<
+    { id: string; name: string; originalName: string | null }[]
+  >([])
   const [newStageName, setNewStageName] = useState('')
 
   useEffect(() => {
     if (isSettingsOpen) {
-      setLocalStages(pipelineStages)
+      setLocalStages(
+        pipelineStages.map((s, idx) => ({ id: `stage-${idx}`, name: s, originalName: s })),
+      )
       setNewStageName('')
     }
   }, [isSettingsOpen, pipelineStages])
 
   const handleAddStage = () => {
-    if (newStageName.trim() && !localStages.includes(newStageName.trim())) {
-      setLocalStages([...localStages, newStageName.trim()])
+    if (newStageName.trim() && !localStages.some((s) => s.name === newStageName.trim())) {
+      setLocalStages([
+        ...localStages,
+        { id: `new-${Date.now()}`, name: newStageName.trim(), originalName: null },
+      ])
       setNewStageName('')
     }
   }
 
-  const handleRemoveStage = (stage: string) => {
-    setLocalStages(localStages.filter((s) => s !== stage))
+  const handleRemoveStage = (id: string) => {
+    setLocalStages(localStages.filter((s) => s.id !== id))
+  }
+
+  const handleRenameStage = (id: string, newName: string) => {
+    setLocalStages(localStages.map((s) => (s.id === id ? { ...s, name: newName } : s)))
   }
 
   const moveStageUp = (index: number) => {
@@ -197,8 +208,19 @@ export default function KanbanBoard() {
   }
 
   const handleSaveStages = () => {
-    if (localStages.length > 0) {
-      updatePipelineStages(localStages)
+    const validStages = localStages.filter((s) => s.name.trim() !== '')
+    if (validStages.length > 0) {
+      const uniqueStages = Array.from(new Set(validStages.map((s) => s.name.trim())))
+      const renames = validStages
+        .filter(
+          (s) =>
+            s.originalName &&
+            s.originalName !== s.name.trim() &&
+            uniqueStages.includes(s.name.trim()),
+        )
+        .map((s) => ({ oldName: s.originalName!, newName: s.name.trim() }))
+
+      updatePipelineStages(uniqueStages, renames)
       setIsSettingsOpen(false)
     }
   }
@@ -245,10 +267,10 @@ export default function KanbanBoard() {
                   <div className="space-y-2">
                     {localStages.map((stage, idx) => (
                       <div
-                        key={stage}
+                        key={stage.id}
                         className="flex items-center gap-2 bg-muted/50 p-2 rounded-md border"
                       >
-                        <div className="flex flex-col gap-0.5 mr-1">
+                        <div className="flex flex-col gap-0.5 mr-1 shrink-0">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -268,12 +290,17 @@ export default function KanbanBoard() {
                             <ArrowDown className="h-3 w-3" />
                           </Button>
                         </div>
-                        <span className="flex-1 text-sm font-medium">{stage}</span>
+                        <Input
+                          value={stage.name}
+                          onChange={(e) => handleRenameStage(stage.id, e.target.value)}
+                          className="flex-1 h-8 text-sm font-medium bg-background"
+                          placeholder="Nome da etapa"
+                        />
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleRemoveStage(stage)}
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                          onClick={() => handleRemoveStage(stage.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
