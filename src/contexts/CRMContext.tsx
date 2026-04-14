@@ -84,34 +84,19 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
   const refreshSettings = useCallback(async () => {
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.user) return
 
       const { data, error } = await supabase
         .from('user_settings')
         .select('pipeline_stages')
-        .eq('user_id', user.id)
+        .eq('user_id', session.user.id)
         .maybeSingle()
 
       if (error && error.code !== 'PGRST116') throw error
-      if (data && data.pipeline_stages) {
+      if (data && data.pipeline_stages && data.pipeline_stages.length > 0) {
         setPipelineStages(data.pipeline_stages)
-      } else {
-        await supabase.from('user_settings').upsert({
-          user_id: user.id,
-          pipeline_stages: [
-            'Lead',
-            'Prospect',
-            'Qualificado',
-            'Em Tratativa',
-            'Proposta',
-            'Negociação',
-            'Ativo',
-            'Concluído',
-            'Inativo',
-          ],
-        })
       }
     } catch (e) {
       console.error('Failed to fetch settings', e)
@@ -144,6 +129,15 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
     refreshProducts()
     refreshEvents()
 
+    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') {
+        refreshSettings()
+        refreshClients()
+        refreshProducts()
+        refreshEvents()
+      }
+    })
+
     const channel = supabase
       .channel('public:clients_and_products')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => {
@@ -159,20 +153,24 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       supabase.removeChannel(channel)
+      authListener.subscription.unsubscribe()
     }
-  }, [refreshClients, refreshProducts])
+  }, [refreshClients, refreshProducts, refreshEvents, refreshSettings])
 
   const updatePipelineStages = async (stages: string[]) => {
     setPipelineStages(stages)
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (user) {
-      const { error } = await supabase.from('user_settings').upsert({
-        user_id: user.id,
-        pipeline_stages: stages,
-        updated_at: new Date().toISOString(),
-      })
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (session?.user) {
+      const { error } = await supabase.from('user_settings').upsert(
+        {
+          user_id: session.user.id,
+          pipeline_stages: stages,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      )
       if (error) {
         toast.error('Erro ao salvar estágios')
         refreshSettings()

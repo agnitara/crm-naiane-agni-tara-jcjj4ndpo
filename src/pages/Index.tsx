@@ -82,35 +82,44 @@ export default function KanbanBoard() {
   const [draggedClientId, setDraggedClientId] = useState<string | null>(null)
 
   const filteredClients = useMemo(() => {
-    return clients.filter((c) => {
-      if (c.status === 'archived') return false
+    return clients
+      .filter((c) => {
+        if (c.status === 'archived') return false
 
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        const matchesSearch =
-          c.name.toLowerCase().includes(query) || (c.email && c.email.toLowerCase().includes(query))
-        if (!matchesSearch) return false
-      }
-
-      if (filterProductStage !== 'all') {
-        const clientProducts = products.filter((p) => p.clientId === c.id)
-        const hasProductInStage = clientProducts.some((p) => p.stage === filterProductStage)
-        if (!hasProductInStage) return false
-      }
-
-      if (dateRange?.from) {
-        const clientDate = new Date(c.updatedAt || c.createdAt)
-        const start = startOfDay(dateRange.from)
-        const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from)
-
-        if (!isWithinInterval(clientDate, { start, end })) {
-          return false
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase()
+          const matchesSearch =
+            c.name.toLowerCase().includes(query) ||
+            (c.email && c.email.toLowerCase().includes(query))
+          if (!matchesSearch) return false
         }
-      }
 
-      return true
-    })
-  }, [clients, products, filterProductStage, dateRange, searchQuery])
+        if (filterProductStage !== 'all') {
+          const clientProducts = products.filter((p) => p.clientId === c.id)
+          const hasProductInStage = clientProducts.some((p) => p.stage === filterProductStage)
+          if (!hasProductInStage) return false
+        }
+
+        if (dateRange?.from) {
+          const clientDate = new Date(c.updatedAt || c.createdAt)
+          const start = startOfDay(dateRange.from)
+          const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from)
+
+          if (!isWithinInterval(clientDate, { start, end })) {
+            return false
+          }
+        }
+
+        return true
+      })
+      .map((c) => {
+        // Previne que clientes sumam caso a coluna original deles seja excluída das configurações
+        if (pipelineStages.length > 0 && !pipelineStages.includes(c.pipeline_stage)) {
+          return { ...c, pipeline_stage: pipelineStages[0] }
+        }
+        return c
+      })
+  }, [clients, products, filterProductStage, dateRange, searchQuery, pipelineStages])
 
   const handleDragStart = (e: React.DragEvent, clientId: string) => {
     e.dataTransfer.setData('clientId', clientId)
