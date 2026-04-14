@@ -58,37 +58,36 @@ export function IntegrationsTab() {
     if (!user) return
     setIsSavingFb(true)
     try {
+      const cleanedPageId = fbPageId.trim()
+      const cleanedToken = fbToken.trim()
+
       const { data: existing } = await supabase
         .from('meta_credentials')
-        .select('user_id')
+        .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      let error
-      if (existing) {
-        const res = await supabase
-          .from('meta_credentials')
-          .update({
-            facebook_page_id: fbPageId,
-            facebook_page_access_token: fbToken,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-        error = res.error
-      } else {
-        const res = await supabase.from('meta_credentials').insert({
-          user_id: user.id,
-          facebook_page_id: fbPageId,
-          facebook_page_access_token: fbToken,
-        })
-        error = res.error
+      const payload = {
+        user_id: user.id,
+        facebook_page_id: cleanedPageId,
+        facebook_page_access_token: cleanedToken,
+        instagram_account_id: existing?.instagram_account_id || null,
+        instagram_access_token: existing?.instagram_access_token || null,
+        updated_at: new Date().toISOString(),
       }
 
+      const { error } = await supabase
+        .from('meta_credentials')
+        .upsert(payload, { onConflict: 'user_id' })
+
       if (error) throw error
+
+      setFbPageId(cleanedPageId)
+      setFbToken(cleanedToken)
       toast.success('Credenciais do Facebook salvas com sucesso!')
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
-      toast.error('Erro ao salvar credenciais do Facebook')
+      toast.error(`Erro: ${error?.message || 'Falha ao salvar credenciais do Facebook'}`)
     } finally {
       setIsSavingFb(false)
     }
@@ -98,37 +97,36 @@ export function IntegrationsTab() {
     if (!user) return
     setIsSavingIg(true)
     try {
+      const cleanedAccountId = igAccountId.trim()
+      const cleanedToken = igToken.trim()
+
       const { data: existing } = await supabase
         .from('meta_credentials')
-        .select('user_id')
+        .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      let error
-      if (existing) {
-        const res = await supabase
-          .from('meta_credentials')
-          .update({
-            instagram_account_id: igAccountId,
-            instagram_access_token: igToken,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-        error = res.error
-      } else {
-        const res = await supabase.from('meta_credentials').insert({
-          user_id: user.id,
-          instagram_account_id: igAccountId,
-          instagram_access_token: igToken,
-        })
-        error = res.error
+      const payload = {
+        user_id: user.id,
+        facebook_page_id: existing?.facebook_page_id || null,
+        facebook_page_access_token: existing?.facebook_page_access_token || null,
+        instagram_account_id: cleanedAccountId,
+        instagram_access_token: cleanedToken,
+        updated_at: new Date().toISOString(),
       }
 
+      const { error } = await supabase
+        .from('meta_credentials')
+        .upsert(payload, { onConflict: 'user_id' })
+
       if (error) throw error
+
+      setIgAccountId(cleanedAccountId)
+      setIgToken(cleanedToken)
       toast.success('Credenciais do Instagram salvas com sucesso!')
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
-      toast.error('Erro ao salvar credenciais do Instagram')
+      toast.error(`Erro: ${error?.message || 'Falha ao salvar credenciais do Instagram'}`)
     } finally {
       setIsSavingIg(false)
     }
