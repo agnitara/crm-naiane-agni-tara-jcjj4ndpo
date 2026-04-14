@@ -65,34 +65,40 @@ export type Database = {
       clients: {
         Row: {
           avatar: string | null
+          behavioral_profile: string | null
           created_at: string
           email: string | null
           id: string
           name: string
           phone: string | null
           pipeline_stage: string
+          sentiment_tags: string[] | null
           status: string
           updated_at: string
         }
         Insert: {
           avatar?: string | null
+          behavioral_profile?: string | null
           created_at?: string
           email?: string | null
           id: string
           name: string
           phone?: string | null
           pipeline_stage?: string
+          sentiment_tags?: string[] | null
           status?: string
           updated_at?: string
         }
         Update: {
           avatar?: string | null
+          behavioral_profile?: string | null
           created_at?: string
           email?: string | null
           id?: string
           name?: string
           phone?: string | null
           pipeline_stage?: string
+          sentiment_tags?: string[] | null
           status?: string
           updated_at?: string
         }
@@ -468,6 +474,8 @@ export const Constants = {
 //   pipeline_stage: text (not null, default: 'Lead'::text)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   behavioral_profile: text (nullable)
+//   sentiment_tags: _text (nullable, default: '{}'::text[])
 // Table: google_calendar_credentials
 //   user_id: uuid (not null)
 //   access_token: text (nullable)

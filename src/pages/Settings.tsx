@@ -6,8 +6,25 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { UserCircle, Link as LinkIcon, BellRing, Save } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 export default function Settings() {
+  const [fbConnected, setFbConnected] = useState(false)
+  const [isConnectingFb, setIsConnectingFb] = useState(false)
+  const [igConnected, setIgConnected] = useState(true)
+  const [waConnected, setWaConnected] = useState(true)
+
+  const handleConnectFb = () => {
+    setIsConnectingFb(true)
+    // Simula o fluxo de conexão OAuth com a API da Meta
+    setTimeout(() => {
+      setFbConnected(true)
+      setIsConnectingFb(false)
+      toast.success('Facebook Messenger conectado via Meta API!')
+    }, 1500)
+  }
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
       <div>
@@ -88,11 +105,13 @@ export default function Settings() {
                     W
                   </div>
                   <div>
-                    <p className="font-medium">WhatsApp Business API</p>
-                    <p className="text-xs text-muted-foreground">Conectado (Número final 9888)</p>
+                    <p className="font-medium">WhatsApp Cloud API</p>
+                    <p className="text-xs text-muted-foreground">
+                      Conectado Oficialmente (Final 9888)
+                    </p>
                   </div>
                 </div>
-                <Switch checked={true} />
+                <Switch checked={waConnected} onCheckedChange={setWaConnected} />
               </div>
 
               <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
@@ -101,26 +120,43 @@ export default function Settings() {
                     IG
                   </div>
                   <div>
-                    <p className="font-medium">Instagram Direct</p>
-                    <p className="text-xs text-muted-foreground">Conectado (@naiane.agni)</p>
+                    <p className="font-medium">Instagram API</p>
+                    <p className="text-xs text-muted-foreground">
+                      Conectado Oficialmente (@naiane.agni)
+                    </p>
                   </div>
                 </div>
-                <Switch checked={true} />
+                <Switch checked={igConnected} onCheckedChange={setIgConnected} />
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg bg-card opacity-60 grayscale">
+              <div
+                className={`flex items-center justify-between p-4 border rounded-lg bg-card transition-all duration-300 ${!fbConnected ? 'opacity-60 grayscale' : ''}`}
+              >
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2] font-bold text-xl">
                     f
                   </div>
                   <div>
-                    <p className="font-medium">Facebook Messenger</p>
-                    <p className="text-xs text-muted-foreground">Não configurado</p>
+                    <p className="font-medium">Facebook Messenger API</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fbConnected
+                        ? 'Conectado Oficialmente (Página Naiane Agni)'
+                        : 'Não configurado'}
+                    </p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  Conectar
-                </Button>
+                {fbConnected ? (
+                  <Switch checked={fbConnected} onCheckedChange={setFbConnected} />
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleConnectFb}
+                    disabled={isConnectingFb}
+                  >
+                    {isConnectingFb ? 'Conectando...' : 'Conectar'}
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
