@@ -1,0 +1,53 @@
+export type Stage = 'Interesse' | 'Proposta' | 'Negociação' | 'Fechado' | 'Entregue' | 'Upsell'
+export type Platform = 'whatsapp' | 'instagram' | 'facebook' | 'system'
+
+export interface Client {
+  id: string
+  name: string
+  email: string
+  phone: string
+  avatar: string
+  status: 'active' | 'archived'
+  createdAt: string
+  notes?: string
+}
+
+export interface Product {
+  id: string
+  clientId: string
+  name: string
+  value: number
+  stage: Stage
+  expectedDate: string
+}
+
+export interface Interaction {
+  id: string
+  clientId: string
+  platform: Platform
+  type: 'text' | 'audio' | 'document' | 'system'
+  content: string
+  transcription?: string
+  transcriptionStatus?: 'pending' | 'completed' | 'failed'
+  timestamp: string
+  direction: 'inbound' | 'outbound'
+  audioDuration?: number
+}
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  date: string
+  clientId?: string
+  googleCalendarId?: string
+  type: 'meeting' | 'deadline'
+}
+
+export interface Document {
+  id: string
+  productId: string
+  name: string
+  url: string
+  uploadedAt: string
+  type: 'pdf' | 'image' | 'doc'
+}

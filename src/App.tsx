@@ -1,27 +1,42 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import Index from './pages/Index'
-import NotFound from './pages/NotFound'
-import Layout from './components/Layout'
+import { CRMProvider } from '@/contexts/CRMContext'
 
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
+import Layout from './components/Layout'
+import Index from './pages/Index'
+import ClientList from './pages/ClientList'
+import ClientProfile from './pages/ClientProfile'
+import CalendarPage from './pages/CalendarPage'
+import Settings from './pages/Settings'
+import NotFound from './pages/NotFound'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <CRMProvider>
+        <Toaster />
+        <Sonner position="top-right" />
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Index />} />
+            <Route path="/clientes" element={<ClientList />} />
+            <Route path="/clientes/:id" element={<ClientProfile />} />
+            <Route
+              path="/produtos"
+              element={
+                <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-xl m-4">
+                  Página de Gestão Global de Produtos (Em Breve)
+                </div>
+              }
+            />
+            <Route path="/calendario" element={<CalendarPage />} />
+            <Route path="/configuracoes" element={<Settings />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </CRMProvider>
     </TooltipProvider>
   </BrowserRouter>
 )
