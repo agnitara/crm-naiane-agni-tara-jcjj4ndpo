@@ -62,6 +62,27 @@ export type Database = {
           },
         ]
       }
+      campaigns: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           avatar: string | null
@@ -75,6 +96,9 @@ export type Database = {
           sentiment_tags: string[] | null
           status: string
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           avatar?: string | null
@@ -88,6 +112,9 @@ export type Database = {
           sentiment_tags?: string[] | null
           status?: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           avatar?: string | null
@@ -101,6 +128,9 @@ export type Database = {
           sentiment_tags?: string[] | null
           status?: string
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: []
       }
@@ -464,6 +494,11 @@ export const Constants = {
 //   sync_error: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+// Table: campaigns
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   status: text (not null, default: 'active'::text)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: clients
 //   id: text (not null)
 //   name: text (not null)
@@ -476,6 +511,9 @@ export const Constants = {
 //   updated_at: timestamp with time zone (not null, default: now())
 //   behavioral_profile: text (nullable)
 //   sentiment_tags: _text (nullable, default: '{}'::text[])
+//   utm_campaign: text (nullable)
+//   utm_source: text (nullable)
+//   utm_medium: text (nullable)
 // Table: google_calendar_credentials
 //   user_id: uuid (not null)
 //   access_token: text (nullable)
@@ -530,6 +568,8 @@ export const Constants = {
 //   FOREIGN KEY calendar_events_client_id_fkey: FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
 //   PRIMARY KEY calendar_events_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY calendar_events_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: campaigns
+//   PRIMARY KEY campaigns_pkey: PRIMARY KEY (id)
 // Table: clients
 //   PRIMARY KEY clients_pkey: PRIMARY KEY (id)
 // Table: google_calendar_credentials
@@ -554,6 +594,9 @@ export const Constants = {
 //   Policy "Users can manage their own calendar events" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
 //     WITH CHECK: (auth.uid() = user_id)
+// Table: campaigns
+//   Policy "authenticated_all_campaigns" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
 // Table: clients
 //   Policy "authenticated_all_clients" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
