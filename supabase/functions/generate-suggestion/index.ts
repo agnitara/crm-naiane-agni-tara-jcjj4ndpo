@@ -2,7 +2,13 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import OpenAI from 'openai'
 import { pipeline, env } from '@xenova/transformers'
-import { corsHeaders } from '../_shared/cors.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+}
 
 // Configuração para rodar modelos locais na Edge
 env.allowLocalModels = false
