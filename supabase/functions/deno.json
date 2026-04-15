@@ -4,6 +4,7 @@
     "google-calendar": 4,
     "embed-chunk": 3,
     "process-audio": 3,
-    "meta-webhook": 4
+    "meta-webhook": 4,
+    "generate-mass-message": 1
   }
 }

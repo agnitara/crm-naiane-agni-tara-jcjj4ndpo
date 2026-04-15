@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "npm:openai@4": "npm:openai@4",
+    "jsr:@supabase/supabase-js@2": "jsr:@supabase/supabase-js@2"
+  }
+}

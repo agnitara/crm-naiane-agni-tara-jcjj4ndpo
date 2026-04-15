@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { ChannelMetrics } from '@/components/ChannelMetrics'
+import { MassFollowUpModal } from '@/components/MassFollowUpModal'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import {
   Dialog,
@@ -409,6 +410,8 @@ export default function KanbanBoard() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            <MassFollowUpModal />
 
             <Sheet>
               <SheetTrigger asChild>
