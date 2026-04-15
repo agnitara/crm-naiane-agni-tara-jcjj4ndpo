@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/alert-dialog'
 
 export default function ClientList() {
-  const { clients, products, deleteClientSoft } = useCRM()
+  const { clients, products, deleteClientSoft, openClientPanel } = useCRM()
   const [search, setSearch] = useState('')
   const [clientToDelete, setClientToDelete] = useState<string | null>(null)
 
@@ -129,12 +129,12 @@ export default function ClientList() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <Link
-                      to={`/clientes/${client.id}`}
-                      className="font-semibold hover:text-primary transition-colors block"
+                    <button
+                      onClick={() => openClientPanel(client.id)}
+                      className="font-semibold hover:text-primary transition-colors block text-left"
                     >
                       {client.name}
-                    </Link>
+                    </button>
                     <p className="text-xs text-muted-foreground truncate max-w-[150px]">
                       {client.email}
                     </p>
@@ -151,8 +151,11 @@ export default function ClientList() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => openClientPanel(client.id)}>
+                      Abrir Painel
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to={`/clientes/${client.id}`}>Ver Perfil</Link>
+                      <Link to={`/clientes/${client.id}`}>Ver Perfil Completo</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive"

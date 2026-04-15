@@ -30,6 +30,9 @@ interface CRMContextType {
   refreshProducts: () => Promise<void>
   refreshClients: () => Promise<void>
   refreshEvents: () => Promise<void>
+  selectedClientId: string | null
+  openClientPanel: (id: string) => void
+  closeClientPanel: () => void
 }
 
 const CRMContext = createContext<CRMContextType | undefined>(undefined)
@@ -50,6 +53,11 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
     'Concluído',
     'Inativo',
   ])
+
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+
+  const openClientPanel = useCallback((id: string) => setSelectedClientId(id), [])
+  const closeClientPanel = useCallback(() => setSelectedClientId(null), [])
 
   const refreshEvents = useCallback(async () => {
     try {
@@ -286,6 +294,9 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
           refreshProducts,
           refreshClients,
           refreshEvents,
+          selectedClientId,
+          openClientPanel,
+          closeClientPanel,
         } as any
       }
     >

@@ -41,9 +41,15 @@ interface ClientTimelineProps {
   interactions: Interaction[]
   clientAvatar: string
   clientName: string
+  onReply?: (text: string) => void
 }
 
-export function ClientTimeline({ interactions, clientAvatar, clientName }: ClientTimelineProps) {
+export function ClientTimeline({
+  interactions,
+  clientAvatar,
+  clientName,
+  onReply,
+}: ClientTimelineProps) {
   const sortedInteractions = [...interactions].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   )
@@ -56,6 +62,7 @@ export function ClientTimeline({ interactions, clientAvatar, clientName }: Clien
           interaction={interaction}
           clientAvatar={clientAvatar}
           clientName={clientName}
+          onReply={onReply}
         />
       ))}
       <div className="text-center text-xs text-muted-foreground pt-4 border-t border-dashed">
@@ -69,10 +76,12 @@ function TimelineItem({
   interaction,
   clientAvatar,
   clientName,
+  onReply,
 }: {
   interaction: Interaction
   clientAvatar: string
   clientName: string
+  onReply?: (text: string) => void
 }) {
   const isOutbound = interaction.direction === 'outbound'
   const style = platformStyles[interaction.platform]
@@ -217,7 +226,11 @@ function TimelineItem({
             messageId={interaction.id}
             content={interaction.transcription || interaction.content}
             onSend={(text) => {
-              toast.success('Mensagem enviada com sucesso!')
+              if (onReply) {
+                onReply(text)
+              } else {
+                toast.success('Mensagem enviada com sucesso!')
+              }
             }}
           />
         )}

@@ -20,6 +20,12 @@ export async function getClients(): Promise<Client[]> {
     pipeline_stage: c.pipeline_stage || 'Lead',
     createdAt: c.created_at,
     updatedAt: c.updated_at,
+    notes: c.notes || '',
+    behavioral_profile: c.behavioral_profile || '',
+    sentiment_tags: c.sentiment_tags || [],
+    utm_source: c.utm_source || '',
+    utm_campaign: c.utm_campaign || '',
+    utm_medium: c.utm_medium || '',
   }))
 }
 

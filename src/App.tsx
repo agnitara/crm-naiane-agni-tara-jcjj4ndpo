@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
 
 import Layout from './components/Layout'
+import { ClientSidePanelWrapper } from './components/client/ClientSidePanelWrapper'
 import Index from './pages/Index'
 import ClientList from './pages/ClientList'
 import ClientProfile from './pages/ClientProfile'
@@ -59,6 +60,7 @@ const App = () => (
         <CRMProvider>
           <Toaster />
           <Sonner position="top-right" />
+          <ClientSidePanelWrapper />
           <Routes>
             {/* Public Auth Routes */}
             <Route

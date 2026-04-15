@@ -20,6 +20,7 @@ import {
   Trash2,
   Edit2,
   Loader2,
+  Plus,
 } from 'lucide-react'
 import {
   getProductDocumentsByClient,
@@ -150,14 +151,25 @@ export function ClientProducts({ products, clientId }: { products: Product[]; cl
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center bg-muted/30 p-3 rounded-lg border">
-        <span className="text-xs font-semibold uppercase text-muted-foreground">
-          Valor Total do Cliente
-        </span>
-        <span className="font-bold text-sm text-emerald-600">
-          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-            totalValue,
-          )}
-        </span>
+        <div>
+          <span className="text-xs font-semibold uppercase text-muted-foreground block mb-0.5">
+            Valor Total do Cliente
+          </span>
+          <span className="font-bold text-sm text-emerald-600">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+              totalValue,
+            )}
+          </span>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => {
+            setEditingProduct(null)
+            setIsDialogOpen(true)
+          }}
+        >
+          <Plus className="h-4 w-4 mr-1" /> Novo Produto
+        </Button>
       </div>
 
       <input

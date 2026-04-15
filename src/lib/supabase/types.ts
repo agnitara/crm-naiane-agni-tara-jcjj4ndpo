@@ -339,38 +339,38 @@ export type Database = {
       }
       products: {
         Row: {
-          client_id: string
+          client_id: string | null
           created_at: string
           deleted_at: string | null
-          expected_date: string
+          expected_date: string | null
           id: string
           name: string
           stage: string
-          start_date: string
+          start_date: string | null
           updated_at: string
           value: number
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           created_at?: string
           deleted_at?: string | null
-          expected_date: string
+          expected_date?: string | null
           id?: string
           name: string
           stage: string
-          start_date?: string
+          start_date?: string | null
           updated_at?: string
           value?: number
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           deleted_at?: string | null
-          expected_date?: string
+          expected_date?: string | null
           id?: string
           name?: string
           stage?: string
-          start_date?: string
+          start_date?: string | null
           updated_at?: string
           value?: number
         }
@@ -642,12 +642,12 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 // Table: products
 //   id: uuid (not null, default: gen_random_uuid())
-//   client_id: text (not null)
+//   client_id: text (nullable)
 //   name: text (not null)
 //   value: numeric (not null, default: 0)
 //   stage: text (not null)
-//   start_date: timestamp with time zone (not null, default: now())
-//   expected_date: timestamp with time zone (not null)
+//   start_date: timestamp with time zone (nullable, default: now())
+//   expected_date: timestamp with time zone (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 //   deleted_at: timestamp with time zone (nullable)
@@ -684,7 +684,6 @@ export const Constants = {
 //   PRIMARY KEY product_types_pkey: PRIMARY KEY (id)
 // Table: products
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
-//   CHECK products_stage_check: CHECK ((stage = ANY (ARRAY['Interesse'::text, 'Proposta'::text, 'Negociação'::text, 'Fechado'::text, 'Entregue'::text, 'Upsell'::text])))
 // Table: user_settings
 //   PRIMARY KEY user_settings_pkey: PRIMARY KEY (user_id)
 
