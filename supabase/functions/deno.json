@@ -5,6 +5,7 @@
     "embed-chunk": 3,
     "process-audio": 3,
     "meta-webhook": 4,
-    "generate-mass-message": 1
+    "generate-mass-message": 1,
+    "generate-client-suggestions": 1
   }
 }

@@ -92,6 +92,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          opt_out: boolean
           phone: string | null
           pipeline_stage: string
           sentiment_tags: string[] | null
@@ -109,6 +110,7 @@ export type Database = {
           id: string
           name: string
           notes?: string | null
+          opt_out?: boolean
           phone?: string | null
           pipeline_stage?: string
           sentiment_tags?: string[] | null
@@ -126,6 +128,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          opt_out?: boolean
           phone?: string | null
           pipeline_stage?: string
           sentiment_tags?: string[] | null
@@ -212,6 +215,33 @@ export type Database = {
           message_id?: string
           status?: string
           suggestion_text?: string
+        }
+        Relationships: []
+      }
+      message_templates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -593,6 +623,7 @@ export const Constants = {
 //   utm_source: text (nullable)
 //   utm_medium: text (nullable)
 //   notes: text (nullable)
+//   opt_out: boolean (not null, default: false)
 // Table: google_calendar_credentials
 //   user_id: text (not null)
 //   access_token: text (nullable)
@@ -613,6 +644,13 @@ export const Constants = {
 //   status: text (not null, default: 'pending'::text)
 //   chunks_retrieved: jsonb (nullable, default: '[]'::jsonb)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: message_templates
+//   id: uuid (not null, default: gen_random_uuid())
+//   user_id: text (not null)
+//   name: text (not null)
+//   content: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: messages
 //   id: uuid (not null, default: gen_random_uuid())
 //   client_id: text (not null)
@@ -676,6 +714,8 @@ export const Constants = {
 // Table: message_suggestions
 //   PRIMARY KEY message_suggestions_pkey: PRIMARY KEY (id)
 //   CHECK message_suggestions_status_check: CHECK ((status = ANY (ARRAY['pending'::text, 'accepted'::text, 'rejected'::text, 'edited'::text])))
+// Table: message_templates
+//   PRIMARY KEY message_templates_pkey: PRIMARY KEY (id)
 // Table: messages
 //   PRIMARY KEY messages_pkey: PRIMARY KEY (id)
 // Table: meta_credentials
@@ -734,6 +774,10 @@ export const Constants = {
 //     USING: true
 //   Policy "authenticated_update_suggestions" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
+// Table: message_templates
+//   Policy "Users can manage their own templates" (ALL, PERMISSIVE) roles={public}
+//     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 // Table: messages
 //   Policy "authenticated_insert_messages" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
@@ -796,6 +840,21 @@ export const Constants = {
 //     LIMIT match_count;
 //   $function$
 //
+// FUNCTION set_current_timestamp_updated_at()
+//   CREATE OR REPLACE FUNCTION public.set_current_timestamp_updated_at()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     NEW.updated_at = NOW();
+//     RETURN NEW;
+//   END;
+//   $function$
+//
+
+// --- TRIGGERS ---
+// Table: message_templates
+//   set_updated_at: CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.message_templates FOR EACH ROW EXECUTE FUNCTION set_current_timestamp_updated_at()
 
 // --- INDEXES ---
 // Table: product_types

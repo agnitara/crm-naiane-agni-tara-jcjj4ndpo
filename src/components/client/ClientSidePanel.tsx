@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ClientProducts } from './ClientProducts'
 import { ClientTimeline } from './ClientTimeline'
 import { ClientNotesTab } from './ClientNotesTab'
+import { ClientSuggestions } from './ClientSuggestions'
 import { useCRM } from '@/contexts/CRMContext'
 import { supabase } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -288,6 +289,7 @@ export function ClientSidePanel({
                   onReply={handleSendMessage}
                 />
               </div>
+              <ClientSuggestions clientId={client.id} onSendReply={handleSendMessage} />
               <div className="p-4 border-t bg-card shrink-0 flex gap-2">
                 <Input
                   value={newMessage}
