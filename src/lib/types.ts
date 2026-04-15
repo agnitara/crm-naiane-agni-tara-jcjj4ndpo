@@ -31,6 +31,14 @@ export interface Client {
   utm_source?: string
   utm_campaign?: string
   utm_medium?: string
+  opt_out?: boolean
+}
+
+export interface MessageTemplate {
+  id: string
+  name: string
+  content: string
+  createdAt: string
 }
 
 export interface Campaign {

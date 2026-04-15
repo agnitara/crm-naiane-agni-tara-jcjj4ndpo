@@ -11,7 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Calendar as CalIcon, MessageSquare, Package, Tag, Clock } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Calendar as CalIcon, MessageSquare, Package, Tag, Clock, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Interaction } from '@/lib/types'
 
@@ -143,6 +145,22 @@ export function ClientSidePanel({
     }
   }
 
+  const handleToggleOptOut = async () => {
+    if (!client) return
+    const newValue = !client.opt_out
+    try {
+      await supabase
+        .from('clients')
+        .update({ opt_out: newValue } as any)
+        .eq('id', client.id)
+      toast.success(
+        newValue ? 'Cliente adicionado à lista negra' : 'Cliente removido da lista negra',
+      )
+    } catch (e) {
+      toast.error('Erro ao atualizar status')
+    }
+  }
+
   const handleSendMessage = async (textToSend?: string) => {
     const text = typeof textToSend === 'string' ? textToSend : newMessage
     if (!text.trim() || !clientId) return
@@ -193,6 +211,23 @@ export function ClientSidePanel({
                     Origem: {client.utm_source}
                   </Badge>
                 )}
+                {client.opt_out && (
+                  <Badge variant="destructive" className="text-[10px]">
+                    <ShieldAlert className="w-3 h-3 mr-1" />
+                    Lista Negra
+                  </Badge>
+                )}
+                <div className="flex items-center gap-1.5 ml-auto pl-2 border-l">
+                  <Switch
+                    checked={client.opt_out || false}
+                    onCheckedChange={handleToggleOptOut}
+                    id="opt-out"
+                    className="scale-75"
+                  />
+                  <Label htmlFor="opt-out" className="text-xs text-muted-foreground cursor-pointer">
+                    Opt-out
+                  </Label>
+                </div>
               </div>
             </div>
           </div>

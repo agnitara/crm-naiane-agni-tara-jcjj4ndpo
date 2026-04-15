@@ -69,14 +69,27 @@ export function MassFollowUpModal() {
     setIsSending(true)
     setHasSent(true)
 
-    const clientsToSend = clients.filter((c) => selectedClientIds.has(c.id))
+    const allSelected = clients.filter((c) => selectedClientIds.has(c.id))
+    const clientsToSend = allSelected.filter((c) => !c.opt_out)
+    const optedOutClients = allSelected.filter((c) => c.opt_out)
+
     const results = clientsToSend.map((c) => ({
       clientId: c.id,
       clientName: c.name,
       platform: 'whatsapp',
       status: 'pending',
     }))
-    setSendResults(results)
+
+    const skippedResults = optedOutClients.map((c) => ({
+      clientId: c.id,
+      clientName: c.name,
+      platform: '-',
+      status: 'error',
+      error: 'Lista Negra (Opt-out)',
+      time: new Date().toLocaleTimeString(),
+    }))
+
+    setSendResults([...results, ...skippedResults])
 
     for (let i = 0; i < clientsToSend.length; i++) {
       const client = clientsToSend[i]
@@ -207,7 +220,15 @@ export function MassFollowUpModal() {
               </Button>
             )}
             {step === 3 && !hasSent && (
-              <Button onClick={handleSend} disabled={isSending || selectedClientIds.size === 0}>
+              <Button
+                onClick={handleSend}
+                disabled={
+                  isSending ||
+                  Array.from(selectedClientIds).every(
+                    (id) => clients.find((c) => c.id === id)?.opt_out,
+                  )
+                }
+              >
                 {isSending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...

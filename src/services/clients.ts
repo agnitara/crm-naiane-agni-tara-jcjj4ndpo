@@ -26,6 +26,7 @@ export async function getClients(): Promise<Client[]> {
     utm_source: c.utm_source || '',
     utm_campaign: c.utm_campaign || '',
     utm_medium: c.utm_medium || '',
+    opt_out: (c as any).opt_out || false,
   }))
 }
 
@@ -53,6 +54,17 @@ export async function updateClientPipelineStage(id: string, stage: PipelineStage
       pipeline_stage: stage,
       updated_at: new Date().toISOString(),
     })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function updateClientOptOut(id: string, optOut: boolean) {
+  const { error } = await supabase
+    .from('clients')
+    .update({
+      opt_out: optOut,
+      updated_at: new Date().toISOString(),
+    } as any)
     .eq('id', id)
   if (error) throw error
 }
