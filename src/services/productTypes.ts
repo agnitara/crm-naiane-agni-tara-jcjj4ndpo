@@ -28,6 +28,17 @@ export const createProductType = async (type: Partial<ProductType>) => {
   return data as ProductType
 }
 
+export const updateProductType = async (id: string, updates: Partial<ProductType>) => {
+  const { data, error } = await supabase
+    .from('product_types')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as ProductType
+}
+
 export const deleteProductType = async (id: string) => {
   const { error } = await supabase.from('product_types').delete().eq('id', id)
   if (error) throw error

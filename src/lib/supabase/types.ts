@@ -694,11 +694,25 @@ export const Constants = {
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 //     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 // Table: campaigns
-//   Policy "authenticated_all_campaigns" (ALL, PERMISSIVE) roles={authenticated}
+//   Policy "authenticated_delete_campaigns" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "authenticated_insert_campaigns" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_campaigns" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_campaigns" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: clients
-//   Policy "authenticated_all_clients" (ALL, PERMISSIVE) roles={authenticated}
+//   Policy "authenticated_delete_clients" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "authenticated_insert_clients" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_clients" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_clients" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: google_calendar_credentials
 //   Policy "Users can manage their own credentials" (ALL, PERMISSIVE) roles={public}
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
@@ -727,14 +741,35 @@ export const Constants = {
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 //     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 // Table: product_documents
-//   Policy "authenticated_all_documents" (ALL, PERMISSIVE) roles={authenticated}
+//   Policy "authenticated_delete_documents" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "authenticated_insert_documents" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_documents" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_documents" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: product_types
-//   Policy "authenticated_all_product_types" (ALL, PERMISSIVE) roles={authenticated}
+//   Policy "authenticated_delete_product_types" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
+//   Policy "authenticated_insert_product_types" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_product_types" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_product_types" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: products
-//   Policy "authenticated_all_products" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: (deleted_at IS NULL)
+//   Policy "authenticated_delete_products" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_insert_products" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_products" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_products" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: user_settings
 //   Policy "Users can manage their own settings" (ALL, PERMISSIVE) roles={public}
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))

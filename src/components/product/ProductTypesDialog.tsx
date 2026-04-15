@@ -13,10 +13,11 @@ import {
 import {
   getProductTypes,
   createProductType,
+  updateProductType,
   deleteProductType,
   ProductType,
 } from '@/services/productTypes'
-import { Trash2, Plus, Loader2 } from 'lucide-react'
+import { Trash2, Plus, Loader2, Edit2, X, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -24,6 +25,9 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
   const [name, setName] = useState('')
   const [value, setValue] = useState('')
   const [loading, setLoading] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editValue, setEditValue] = useState('')
 
   const fetchTypes = async () => {
     try {
@@ -38,13 +42,18 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
   }
 
   useEffect(() => {
-    if (isOpen) fetchTypes()
+    if (isOpen) {
+      fetchTypes()
+      setEditingId(null)
+    }
   }, [isOpen])
 
   const handleAdd = async () => {
     if (!name) return
     try {
-      const numericValue = value ? parseFloat(value.toString().replace(',', '.')) : 0
+      let numericValue = value ? parseFloat(value.toString().replace(',', '.')) : 0
+      if (isNaN(numericValue)) numericValue = 0
+
       await createProductType({ name, default_value: numericValue })
       toast.success('Tipo de produto adicionado')
       setName('')
@@ -52,7 +61,23 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
       fetchTypes()
     } catch (e: any) {
       console.error('Error adding product type:', e)
-      toast.error(`Erro ao adicionar tipo de produto: ${e.message || 'Pode já existir.'}`)
+      toast.error(`Erro ao adicionar: ${e.message || 'Produto já pode existir.'}`)
+    }
+  }
+
+  const handleUpdate = async (id: string) => {
+    if (!editName) return
+    try {
+      let numericValue = editValue ? parseFloat(editValue.toString().replace(',', '.')) : 0
+      if (isNaN(numericValue)) numericValue = 0
+
+      await updateProductType(id, { name: editName, default_value: numericValue })
+      toast.success('Tipo de produto atualizado')
+      setEditingId(null)
+      fetchTypes()
+    } catch (e: any) {
+      console.error('Error updating product type:', e)
+      toast.error(`Erro ao atualizar: ${e.message || 'Já pode existir um com esse nome.'}`)
     }
   }
 
@@ -66,9 +91,15 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
     }
   }
 
+  const startEditing = (t: ProductType) => {
+    setEditingId(t.id)
+    setEditName(t.name)
+    setEditValue(t.default_value.toString())
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>Catálogo de Produtos</DialogTitle>
         </DialogHeader>
@@ -78,6 +109,7 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
               placeholder="Nome do Produto (ex: Mentoria)"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
             />
           </div>
           <div className="w-32 space-y-1">
@@ -87,6 +119,7 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
               placeholder="Valor (R$)"
               value={value}
               onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
             />
           </div>
           <Button onClick={handleAdd} size="icon" className="shrink-0 shadow-elevation">
@@ -99,7 +132,7 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Valor Padrão</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[100px] text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -118,18 +151,79 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
               ) : (
                 types.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.name}</TableCell>
-                    <TableCell>
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                      }).format(t.default_value)}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(t.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
+                    {editingId === t.id ? (
+                      <>
+                        <TableCell className="p-2">
+                          <Input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="h-8"
+                            autoFocus
+                            onKeyDown={(e) => e.key === 'Enter' && handleUpdate(t.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="p-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className="h-8 w-24"
+                            onKeyDown={(e) => e.key === 'Enter' && handleUpdate(t.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="p-2 text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-green-600"
+                              onClick={() => handleUpdate(t.id)}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground"
+                              onClick={() => setEditingId(null)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell className="font-medium">{t.name}</TableCell>
+                        <TableCell>
+                          {new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          }).format(t.default_value)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              onClick={() => startEditing(t)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDelete(t.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))
               )}
