@@ -134,8 +134,8 @@ export function MassFollowUpModal() {
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !isSending && setIsOpen(v)}>
       <DialogTrigger asChild>
-        <Button variant="default" className="hidden lg:flex shrink-0 gap-2">
-          <MessageSquare className="h-4 w-4" /> Follow-up em Massa
+        <Button variant="default" className="flex shrink-0 gap-2">
+          <MessageSquare className="h-4 w-4 hidden sm:block" /> Follow-up Massa
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
@@ -208,10 +208,11 @@ export function MassFollowUpModal() {
               </Button>
             )}
           </div>
-          <div>
+          <div className="flex gap-2">
             {step === 1 && (
               <Button onClick={() => setStep(2)} disabled={selectedClientIds.size === 0}>
-                Continuar para Mensagem <ArrowRight className="w-4 h-4 ml-2" />
+                Continuar <span className="hidden sm:inline">para Mensagem</span>{' '}
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             )}
             {step === 2 && (

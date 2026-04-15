@@ -134,6 +134,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          last_read_at: string
           name: string
           notes: string | null
           opt_out: boolean
@@ -152,6 +153,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id: string
+          last_read_at?: string
           name: string
           notes?: string | null
           opt_out?: boolean
@@ -170,6 +172,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_read_at?: string
           name?: string
           notes?: string | null
           opt_out?: boolean
@@ -455,19 +458,25 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          browser_notifications_enabled: boolean
           created_at: string
+          notification_sound_enabled: boolean
           pipeline_stages: string[]
           updated_at: string
           user_id: string
         }
         Insert: {
+          browser_notifications_enabled?: boolean
           created_at?: string
+          notification_sound_enabled?: boolean
           pipeline_stages?: string[]
           updated_at?: string
           user_id: string
         }
         Update: {
+          browser_notifications_enabled?: boolean
           created_at?: string
+          notification_sound_enabled?: boolean
           pipeline_stages?: string[]
           updated_at?: string
           user_id?: string
@@ -678,6 +687,7 @@ export const Constants = {
 //   utm_medium: text (nullable)
 //   notes: text (nullable)
 //   opt_out: boolean (not null, default: false)
+//   last_read_at: timestamp with time zone (not null, default: now())
 // Table: google_calendar_credentials
 //   user_id: text (not null)
 //   access_token: text (nullable)
@@ -752,6 +762,8 @@ export const Constants = {
 //   pipeline_stages: _text (not null, default: ARRAY['Lead'::text, 'Prospect'::text, 'Qualificado'::text, 'Em Tratativa'::text, 'Proposta'::text, 'Negociação'::text, 'Ativo'::text, 'Concluído'::text, 'Inativo'::text])
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   notification_sound_enabled: boolean (not null, default: true)
+//   browser_notifications_enabled: boolean (not null, default: false)
 
 // --- CONSTRAINTS ---
 // Table: calendar_events

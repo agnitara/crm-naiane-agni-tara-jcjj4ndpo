@@ -150,10 +150,13 @@ export function ClientSidePanel({
     if (!client) return
     const newValue = !client.opt_out
     try {
-      await supabase
+      const { error } = await supabase
         .from('clients')
-        .update({ opt_out: newValue } as any)
+        .update({ opt_out: newValue })
         .eq('id', client.id)
+
+      if (error) throw error
+
       toast.success(
         newValue ? 'Cliente adicionado à lista negra' : 'Cliente removido da lista negra',
       )

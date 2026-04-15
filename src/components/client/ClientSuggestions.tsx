@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useCRM } from '@/contexts/CRMContext'
 import { Button } from '@/components/ui/button'
 import {
   MessageSquare,
@@ -29,12 +30,13 @@ export function ClientSuggestions({
   clientId: string
   onSendReply: (text: string) => void
 }) {
+  const { updateClientStage } = useCRM()
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [editedReplies, setEditedReplies] = useState<Record<string, string>>({})
 
   const fetchSuggestions = useCallback(async () => {
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('client_suggestions')
       .select('*')
       .eq('client_id', clientId)
@@ -105,19 +107,13 @@ export function ClientSuggestions({
 
   const handleAccept = async (s: Suggestion) => {
     try {
-      await (supabase as any)
-        .from('client_suggestions')
-        .update({ status: 'accepted' })
-        .eq('id', s.id)
+      await supabase.from('client_suggestions').update({ status: 'accepted' }).eq('id', s.id)
 
       if (s.type === 'reply') {
         const text = editedReplies[s.id] || s.content
         if (text.trim()) onSendReply(text)
       } else if (s.type === 'pipeline_stage') {
-        await supabase
-          .from('clients')
-          .update({ pipeline_stage: s.content } as any)
-          .eq('id', clientId)
+        await updateClientStage(clientId, s.content as any)
       } else if (s.type === 'tag') {
         const { data: client } = await supabase
           .from('clients')
@@ -171,10 +167,7 @@ export function ClientSuggestions({
 
   const handleReject = async (s: Suggestion) => {
     try {
-      await (supabase as any)
-        .from('client_suggestions')
-        .update({ status: 'rejected' })
-        .eq('id', s.id)
+      await supabase.from('client_suggestions').update({ status: 'rejected' }).eq('id', s.id)
       setSuggestions((prev) => prev.filter((item) => item.id !== s.id))
     } catch (e) {
       console.error(e)

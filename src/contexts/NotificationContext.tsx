@@ -322,6 +322,43 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
           }
         },
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'client_suggestions' },
+        (payload) => {
+          const sug = payload.new
+          if (sug.status !== 'pending' && payload.old.status === 'pending') {
+            setBadges((prev) => {
+              const current = prev[sug.client_id]
+              if (!current || current.pendingSuggestions <= 0) return prev
+              return {
+                ...prev,
+                [sug.client_id]: { ...current, pendingSuggestions: current.pendingSuggestions - 1 },
+              }
+            })
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'calendar_events' },
+        (payload) => {
+          const evt = payload.new
+          if (evt.client_id) {
+            setBadges((prev) => {
+              const current = prev[evt.client_id] || {
+                unreadMessages: 0,
+                pendingSuggestions: 0,
+                upcomingEvents: 0,
+              }
+              return {
+                ...prev,
+                [evt.client_id]: { ...current, upcomingEvents: current.upcomingEvents + 1 },
+              }
+            })
+          }
+        },
+      )
       .subscribe()
 
     return () => {

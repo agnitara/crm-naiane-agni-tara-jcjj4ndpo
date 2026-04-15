@@ -23,6 +23,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { MassFollowUpModal } from '@/components/MassFollowUpModal'
+import { useNotifications } from '@/contexts/NotificationContext'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +39,7 @@ import {
 
 export default function ClientList() {
   const { clients, products, deleteClientSoft, openClientPanel } = useCRM()
+  const { badges } = useNotifications()
   const [search, setSearch] = useState('')
   const [clientToDelete, setClientToDelete] = useState<string | null>(null)
 
@@ -100,6 +104,7 @@ export default function ClientList() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <MassFollowUpModal />
           <Button onClick={() => setIsNewClientOpen(true)} className="shrink-0 shadow-elevation">
             <Plus className="mr-2 h-4 w-4" /> Novo Cliente
           </Button>
@@ -118,26 +123,53 @@ export default function ClientList() {
             >
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 border border-muted">
-                    <AvatarImage src={client.avatar} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
-                      {client.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .substring(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-12 w-12 border border-muted">
+                      <AvatarImage src={client.avatar} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
+                        {client.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .substring(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {(badges[client.id]?.unreadMessages || 0) > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground ring-2 ring-background animate-in zoom-in">
+                        {badges[client.id].unreadMessages}
+                      </span>
+                    )}
+                  </div>
                   <div>
                     <button
                       onClick={() => openClientPanel(client.id)}
-                      className="font-semibold hover:text-primary transition-colors block text-left"
+                      className="font-semibold hover:text-primary transition-colors block text-left flex items-center gap-1.5"
                     >
                       {client.name}
                     </button>
-                    <p className="text-xs text-muted-foreground truncate max-w-[150px]">
-                      {client.email}
-                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">
+                        {client.email || client.phone || 'Sem contato'}
+                      </p>
+                      {(badges[client.id]?.pendingSuggestions || 0) > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[9px] h-4 px-1 bg-purple-100 text-purple-700 hover:bg-purple-100"
+                        >
+                          <Sparkles className="w-2.5 h-2.5 mr-0.5" />{' '}
+                          {badges[client.id]?.pendingSuggestions || 0}
+                        </Badge>
+                      )}
+                      {(badges[client.id]?.upcomingEvents || 0) > 0 && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[9px] h-4 px-1 bg-blue-100 text-blue-700 hover:bg-blue-100"
+                        >
+                          <CalIcon className="w-2.5 h-2.5 mr-0.5" />{' '}
+                          {badges[client.id]?.upcomingEvents || 0}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <DropdownMenu>
