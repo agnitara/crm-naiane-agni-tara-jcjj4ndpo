@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useCRM } from '@/contexts/CRMContext'
+import { useNotifications } from '@/contexts/NotificationContext'
 import { PipelineStage } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -98,6 +99,7 @@ const DEFAULT_FILTERS: FilterState = {
 }
 
 export default function KanbanBoard() {
+  const { badges } = useNotifications()
   const {
     clients,
     products,
@@ -757,13 +759,39 @@ export default function KanbanBoard() {
                                 </AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 flex-1">
-                                <span
-                                  onClick={() => openClientPanel(client.id)}
-                                  className="font-medium text-sm hover:text-primary transition-colors truncate block cursor-pointer"
-                                >
-                                  {client.name}
-                                </span>
-                                <p className="text-xs text-muted-foreground truncate">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span
+                                    onClick={() => openClientPanel(client.id)}
+                                    className="font-medium text-sm hover:text-primary transition-colors truncate block cursor-pointer"
+                                  >
+                                    {client.name}
+                                  </span>
+                                  {badges[client.id]?.unreadMessages > 0 && (
+                                    <span
+                                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground"
+                                      title={`${badges[client.id].unreadMessages} mensagens não lidas`}
+                                    >
+                                      {badges[client.id].unreadMessages}
+                                    </span>
+                                  )}
+                                  {badges[client.id]?.pendingSuggestions > 0 && (
+                                    <span
+                                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-purple-500 text-[10px] font-bold text-white"
+                                      title={`${badges[client.id].pendingSuggestions} sugestões Kimi`}
+                                    >
+                                      {badges[client.id].pendingSuggestions}
+                                    </span>
+                                  )}
+                                  {badges[client.id]?.upcomingEvents > 0 && (
+                                    <span
+                                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white"
+                                      title={`${badges[client.id].upcomingEvents} agendamentos próximos`}
+                                    >
+                                      {badges[client.id].upcomingEvents}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate mt-0.5">
                                   {client.email || client.phone}
                                 </p>
                               </div>

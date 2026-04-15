@@ -83,6 +83,50 @@ export type Database = {
         }
         Relationships: []
       }
+      client_suggestions: {
+        Row: {
+          client_id: string
+          content: string
+          created_at: string
+          description: string
+          id: string
+          reason: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          content: string
+          created_at?: string
+          description: string
+          id?: string
+          reason: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          content?: string
+          created_at?: string
+          description?: string
+          id?: string
+          reason?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'client_suggestions_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       clients: {
         Row: {
           avatar: string | null
@@ -607,6 +651,16 @@ export const Constants = {
 //   name: text (not null)
 //   status: text (not null, default: 'active'::text)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: client_suggestions
+//   id: uuid (not null, default: gen_random_uuid())
+//   client_id: text (not null)
+//   type: text (not null)
+//   content: text (not null)
+//   description: text (not null)
+//   reason: text (not null)
+//   status: text (not null, default: 'pending'::text)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: clients
 //   id: text (not null)
 //   name: text (not null)
@@ -705,6 +759,9 @@ export const Constants = {
 //   PRIMARY KEY calendar_events_pkey: PRIMARY KEY (id)
 // Table: campaigns
 //   PRIMARY KEY campaigns_pkey: PRIMARY KEY (id)
+// Table: client_suggestions
+//   FOREIGN KEY client_suggestions_client_id_fkey: FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
+//   PRIMARY KEY client_suggestions_pkey: PRIMARY KEY (id)
 // Table: clients
 //   PRIMARY KEY clients_pkey: PRIMARY KEY (id)
 // Table: google_calendar_credentials
@@ -744,6 +801,16 @@ export const Constants = {
 //   Policy "authenticated_select_campaigns" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "authenticated_update_campaigns" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: client_suggestions
+//   Policy "authenticated_delete_client_suggestions" (DELETE, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_insert_client_suggestions" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "authenticated_select_client_suggestions" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "authenticated_update_client_suggestions" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: clients

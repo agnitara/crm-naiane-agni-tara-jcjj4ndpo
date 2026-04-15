@@ -3,6 +3,7 @@ import { UserCircle, Link as LinkIcon, BellRing, Megaphone } from 'lucide-react'
 import { ProfileTab } from './settings/ProfileTab'
 import { IntegrationsTab } from './settings/IntegrationsTab'
 import { CampaignsTab } from './settings/CampaignsTab'
+import { NotificationsTab } from './settings/NotificationsTab'
 import { Card, CardContent } from '@/components/ui/card'
 
 export default function Settings() {
@@ -44,11 +45,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="notifications" className="mt-6">
-          <Card className="shadow-subtle border-none">
-            <CardContent className="p-12 text-center text-muted-foreground">
-              Nenhuma notificação configurada no momento.
-            </CardContent>
-          </Card>
+          <NotificationsTab />
         </TabsContent>
       </Tabs>
     </div>

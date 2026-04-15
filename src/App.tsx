@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { CRMProvider } from '@/contexts/CRMContext'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
 
@@ -58,40 +59,42 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <CRMProvider>
-          <Toaster />
-          <Sonner position="top-right" />
-          <ClientSidePanelWrapper />
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              }
-            />
+          <NotificationProvider>
+            <Toaster />
+            <Sonner position="bottom-right" />
+            <ClientSidePanelWrapper />
+            <Routes>
+              {/* Public Auth Routes */}
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
 
-            {/* Protected App Routes */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Index />} />
-              <Route path="/clientes" element={<ClientList />} />
-              <Route path="/clientes/:id" element={<ClientProfile />} />
-              <Route path="/produtos" element={<ProductList />} />
-              <Route path="/calendario" element={<CalendarPage />} />
-              <Route path="/configuracoes" element={<Settings />} />
-            </Route>
+              {/* Protected App Routes */}
+              <Route
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Index />} />
+                <Route path="/clientes" element={<ClientList />} />
+                <Route path="/clientes/:id" element={<ClientProfile />} />
+                <Route path="/produtos" element={<ProductList />} />
+                <Route path="/calendario" element={<CalendarPage />} />
+                <Route path="/configuracoes" element={<Settings />} />
+              </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Fallback */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </NotificationProvider>
         </CRMProvider>
       </TooltipProvider>
     </AuthProvider>
