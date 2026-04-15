@@ -1,10 +1,26 @@
 import { useState } from 'react'
 import { useCRM } from '@/contexts/CRMContext'
 import { Link } from 'react-router-dom'
-import { Search, MoreVertical, ShieldAlert, Plus } from 'lucide-react'
+import {
+  Search,
+  MoreVertical,
+  ShieldAlert,
+  Plus,
+  Sparkles,
+  Calendar as CalIcon,
+} from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { PIPELINE_STAGES } from '@/lib/types'
 import {
   Dialog,
   DialogContent,
@@ -44,9 +60,17 @@ export default function ClientList() {
   const [clientToDelete, setClientToDelete] = useState<string | null>(null)
 
   const [isNewClientOpen, setIsNewClientOpen] = useState(false)
-  const [newClientName, setNewClientName] = useState('')
-  const [newClientEmail, setNewClientEmail] = useState('')
-  const [newClientPhone, setNewClientPhone] = useState('')
+  const [newClientData, setNewClientData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    pipeline_stage: 'Lead',
+    behavioral_profile: '',
+    notes: '',
+    utm_source: '',
+    utm_campaign: '',
+    utm_medium: '',
+  })
   const [isCreating, setIsCreating] = useState(false)
 
   const activeClients = clients.filter(
@@ -62,23 +86,30 @@ export default function ClientList() {
 
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newClientName.trim()) return
+    if (!newClientData.name.trim()) return
 
     try {
       setIsCreating(true)
-      const newClient = await createClient({
-        name: newClientName,
-        email: newClientEmail,
-        phone: newClientPhone,
-      })
+      const newClient = await createClient(newClientData)
       toast.success('Cliente criado com sucesso!')
       setIsNewClientOpen(false)
+      setNewClientData({
+        name: '',
+        email: '',
+        phone: '',
+        pipeline_stage: 'Lead',
+        behavioral_profile: '',
+        notes: '',
+        utm_source: '',
+        utm_campaign: '',
+        utm_medium: '',
+      })
       // Small delay to allow the user to see the success before redirect
       setTimeout(() => {
         window.location.href = `/clientes/${newClient.id}`
       }, 500)
-    } catch (error) {
-      toast.error('Erro ao criar cliente')
+    } catch (error: any) {
+      toast.error(`Erro ao criar cliente: ${error?.message || 'Tente novamente'}`)
       console.error(error)
     } finally {
       setIsCreating(false)
@@ -268,50 +299,132 @@ export default function ClientList() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={isNewClientOpen} onOpenChange={setIsNewClientOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <form onSubmit={handleCreateClient}>
-            <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">
-                  Nome <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  value={newClientName}
-                  onChange={(e) => setNewClientName(e.target.value)}
-                  placeholder="Ex: João Silva"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newClientEmail}
-                  onChange={(e) => setNewClientEmail(e.target.value)}
-                  placeholder="joao@exemplo.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                <Input
-                  id="phone"
-                  value={newClientPhone}
-                  onChange={(e) => setNewClientPhone(e.target.value)}
-                  placeholder="(11) 99999-9999"
-                />
+      <Dialog
+        open={isNewClientOpen}
+        onOpenChange={(open) => {
+          setIsNewClientOpen(open)
+          if (!open) {
+            setNewClientData({
+              name: '',
+              email: '',
+              phone: '',
+              pipeline_stage: 'Lead',
+              behavioral_profile: '',
+              notes: '',
+              utm_source: '',
+              utm_campaign: '',
+              utm_medium: '',
+            })
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0">
+            <DialogTitle>Novo Cliente</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateClient} className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto pr-2 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="name">
+                    Nome <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    value={newClientData.name}
+                    onChange={(e) => setNewClientData({ ...newClientData, name: e.target.value })}
+                    placeholder="Ex: João Silva"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newClientData.email}
+                    onChange={(e) => setNewClientData({ ...newClientData, email: e.target.value })}
+                    placeholder="joao@exemplo.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone / WhatsApp</Label>
+                  <Input
+                    id="phone"
+                    value={newClientData.phone}
+                    onChange={(e) => setNewClientData({ ...newClientData, phone: e.target.value })}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="pipeline_stage">Estágio do Funil</Label>
+                  <Select
+                    value={newClientData.pipeline_stage}
+                    onValueChange={(v) => setNewClientData({ ...newClientData, pipeline_stage: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o estágio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PIPELINE_STAGES.map((stage) => (
+                        <SelectItem key={stage} value={stage}>
+                          {stage}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="behavioral_profile">Perfil Comportamental (Opcional)</Label>
+                  <Textarea
+                    id="behavioral_profile"
+                    value={newClientData.behavioral_profile}
+                    onChange={(e) =>
+                      setNewClientData({ ...newClientData, behavioral_profile: e.target.value })
+                    }
+                    placeholder="Resumo do perfil do cliente..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="notes">Notas Iniciais (Opcional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={newClientData.notes}
+                    onChange={(e) => setNewClientData({ ...newClientData, notes: e.target.value })}
+                    placeholder="Informações adicionais relevantes..."
+                    rows={2}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="utm_source">Origem (UTM Source)</Label>
+                  <Input
+                    id="utm_source"
+                    value={newClientData.utm_source}
+                    onChange={(e) =>
+                      setNewClientData({ ...newClientData, utm_source: e.target.value })
+                    }
+                    placeholder="Ex: instagram"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="utm_campaign">Campanha (UTM Campaign)</Label>
+                  <Input
+                    id="utm_campaign"
+                    value={newClientData.utm_campaign}
+                    onChange={(e) =>
+                      setNewClientData({ ...newClientData, utm_campaign: e.target.value })
+                    }
+                    placeholder="Ex: lancamento_v2"
+                  />
+                </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-4 mt-2 shrink-0 border-t">
               <Button type="button" variant="outline" onClick={() => setIsNewClientOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isCreating || !newClientName.trim()}>
+              <Button type="submit" disabled={isCreating || !newClientData.name.trim()}>
                 {isCreating ? 'Salvando...' : 'Salvar Cliente'}
               </Button>
             </DialogFooter>

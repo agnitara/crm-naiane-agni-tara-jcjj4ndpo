@@ -119,8 +119,9 @@ export function ProductDialog({
       }
       onSuccess()
       onClose()
-    } catch (e) {
-      toast.error('Erro ao salvar produto. Tente novamente')
+    } catch (e: any) {
+      console.error('Error saving product:', e)
+      toast.error(`Erro ao salvar produto: ${e?.message || 'Tente novamente'}`)
     }
   }
 

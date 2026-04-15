@@ -30,7 +30,17 @@ export async function getClients(): Promise<Client[]> {
   }))
 }
 
-export async function createClient(data: { name: string; email?: string; phone?: string }) {
+export async function createClient(data: {
+  name: string
+  email?: string
+  phone?: string
+  pipeline_stage?: string
+  behavioral_profile?: string
+  notes?: string
+  utm_source?: string
+  utm_campaign?: string
+  utm_medium?: string
+}) {
   const { data: result, error } = await supabase
     .from('clients')
     .insert({
@@ -38,7 +48,12 @@ export async function createClient(data: { name: string; email?: string; phone?:
       name: data.name,
       email: data.email || null,
       phone: data.phone || null,
-      pipeline_stage: 'Lead',
+      pipeline_stage: data.pipeline_stage || 'Lead',
+      behavioral_profile: data.behavioral_profile || null,
+      notes: data.notes || null,
+      utm_source: data.utm_source || null,
+      utm_campaign: data.utm_campaign || null,
+      utm_medium: data.utm_medium || null,
       status: 'active',
     })
     .select()
