@@ -5,14 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Card } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Link } from 'react-router-dom'
+import { Separator } from '@/components/ui/separator'
 import {
   Package,
   Search,
@@ -25,7 +18,10 @@ import {
   X,
   ArrowUp,
   ArrowDown,
-  Calendar as CalendarIcon,
+  Filter,
+  User,
+  Phone,
+  Tag,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -38,7 +34,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog'
 import {
   DropdownMenu,
@@ -49,11 +44,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
-import { differenceInDays, format, isWithinInterval, startOfDay, endOfDay } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { DateRange } from 'react-day-picker'
+import { differenceInDays } from 'date-fns'
 
 const getProductBadgeColor = (stage: string) => {
   switch (stage) {
@@ -74,53 +66,171 @@ const getProductBadgeColor = (stage: string) => {
   }
 }
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debouncedValue
+}
+
+type ProductCountFilter = 'all' | '0' | '1-2' | '3+'
+type LastInteractionFilter = 'all' | '7' | '30' | '90'
+
+interface FilterState {
+  search: string
+  columns: string[]
+  productStages: string[]
+  tags: string[]
+  lastInteraction: LastInteractionFilter
+  productCount: ProductCountFilter
+}
+
+const DEFAULT_FILTERS: FilterState = {
+  search: '',
+  columns: [],
+  productStages: [],
+  tags: [],
+  lastInteraction: 'all',
+  productCount: 'all',
+}
+
 export default function KanbanBoard() {
-  const { clients, products, updateClientStage, pipelineStages, updatePipelineStages } = useCRM()
-  const [filterProductStage, setFilterProductStage] = useState<string>('all')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
-  const [searchQuery, setSearchQuery] = useState<string>('')
+  const {
+    clients,
+    products,
+    updateClientStage,
+    pipelineStages,
+    updatePipelineStages,
+    openClientPanel,
+  } = useCRM()
+
+  const [filters, setFilters] = useState<FilterState>(() => {
+    const saved = localStorage.getItem('crm-kanban-filters')
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch {
+        /* ignore */
+      }
+    }
+    return DEFAULT_FILTERS
+  })
+
+  useEffect(() => {
+    localStorage.setItem('crm-kanban-filters', JSON.stringify(filters))
+  }, [filters])
+
+  const [searchTerm, setSearchTerm] = useState(filters.search)
+  const debouncedSearch = useDebounce(searchTerm, 300)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [draggedClientId, setDraggedClientId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, search: debouncedSearch }))
+  }, [debouncedSearch])
+
+  const availableTags = useMemo(() => {
+    const tags = new Set<string>()
+    clients.forEach((c) => c.sentiment_tags?.forEach((t) => tags.add(t)))
+    return Array.from(tags)
+  }, [clients])
+
+  const suggestions = useMemo(() => {
+    if (!searchTerm || searchTerm.length < 2) return []
+    const q = searchTerm.toLowerCase()
+    const results: { label: string; type: 'client' | 'tag' | 'phone'; value: string }[] = []
+
+    clients
+      .filter((c) => c.name.toLowerCase().includes(q))
+      .slice(0, 3)
+      .forEach((c) => results.push({ label: c.name, type: 'client', value: c.name }))
+    clients
+      .filter((c) => c.phone && c.phone.includes(q))
+      .slice(0, 2)
+      .forEach((c) => results.push({ label: c.phone!, type: 'phone', value: c.phone! }))
+    availableTags
+      .filter((t) => t.toLowerCase().includes(q))
+      .slice(0, 2)
+      .forEach((t) => results.push({ label: `Tag: ${t}`, type: 'tag', value: t }))
+
+    return results
+  }, [searchTerm, clients, availableTags])
 
   const filteredClients = useMemo(() => {
     return clients
       .filter((c) => {
         if (c.status === 'archived') return false
 
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase()
-          const matchesSearch =
-            c.name.toLowerCase().includes(query) ||
-            (c.email && c.email.toLowerCase().includes(query))
-          if (!matchesSearch) return false
+        if (filters.search) {
+          const q = filters.search.toLowerCase()
+          const matchesName = c.name.toLowerCase().includes(q)
+          const matchesEmail = c.email?.toLowerCase().includes(q)
+          const matchesPhone = c.phone?.toLowerCase().includes(q)
+          if (!matchesName && !matchesEmail && !matchesPhone) return false
         }
 
-        if (filterProductStage !== 'all') {
-          const clientProducts = products.filter((p) => p.clientId === c.id)
-          const hasProductInStage = clientProducts.some((p) => p.stage === filterProductStage)
-          if (!hasProductInStage) return false
-        }
+        if (filters.columns.length > 0 && !filters.columns.includes(c.pipeline_stage)) return false
 
-        if (dateRange?.from) {
-          const clientDate = new Date(c.updatedAt || c.createdAt)
-          const start = startOfDay(dateRange.from)
-          const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from)
-
-          if (!isWithinInterval(clientDate, { start, end })) {
+        if (filters.tags.length > 0) {
+          if (!c.sentiment_tags || !filters.tags.some((t) => c.sentiment_tags!.includes(t)))
             return false
-          }
+        }
+
+        const clientProducts = products.filter((p) => p.clientId === c.id)
+
+        if (filters.productStages.length > 0) {
+          const hasMatchingProduct = clientProducts.some((p) =>
+            filters.productStages.includes(p.stage),
+          )
+          if (!hasMatchingProduct) return false
+        }
+
+        if (filters.productCount !== 'all') {
+          const count = clientProducts.length
+          if (filters.productCount === '0' && count !== 0) return false
+          if (filters.productCount === '1-2' && (count < 1 || count > 2)) return false
+          if (filters.productCount === '3+' && count < 3) return false
+        }
+
+        if (filters.lastInteraction !== 'all') {
+          const lastUpdate = new Date(c.updatedAt || c.createdAt)
+          const daysSince = Math.max(0, differenceInDays(new Date(), lastUpdate))
+          if (filters.lastInteraction === '7' && daysSince > 7) return false
+          if (filters.lastInteraction === '30' && daysSince > 30) return false
+          if (filters.lastInteraction === '90' && daysSince > 90) return false
         }
 
         return true
       })
       .map((c) => {
-        // Previne que clientes sumam caso a coluna original deles seja excluída das configurações
         if (pipelineStages.length > 0 && !pipelineStages.includes(c.pipeline_stage)) {
           return { ...c, pipeline_stage: pipelineStages[0] }
         }
         return c
       })
-  }, [clients, products, filterProductStage, dateRange, searchQuery, pipelineStages])
+  }, [clients, products, filters, pipelineStages])
 
+  const activeFilterCount =
+    filters.columns.length +
+    filters.productStages.length +
+    filters.tags.length +
+    (filters.lastInteraction !== 'all' ? 1 : 0) +
+    (filters.productCount !== 'all' ? 1 : 0)
+
+  const toggleFilter = (key: keyof FilterState, value: string) => {
+    setFilters((prev) => {
+      const list = prev[key] as string[]
+      if (list.includes(value)) {
+        return { ...prev, [key]: list.filter((v) => v !== value) }
+      } else {
+        return { ...prev, [key]: [...list, value] }
+      }
+    })
+  }
+
+  // Drag and Drop
   const handleDragStart = (e: React.DragEvent, clientId: string) => {
     e.dataTransfer.setData('clientId', clientId)
     setDraggedClientId(clientId)
@@ -129,31 +239,23 @@ export default function KanbanBoard() {
       if (target) target.style.opacity = '0.5'
     }, 0)
   }
-
   const handleDragEnd = (e: React.DragEvent) => {
     setDraggedClientId(null)
     const target = e.target as HTMLElement
     if (target) target.style.opacity = '1'
   }
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
   }
-
   const handleDrop = (e: React.DragEvent, stage: PipelineStage) => {
     e.preventDefault()
     const clientId = e.dataTransfer.getData('clientId')
-    if (clientId && clientId !== '') {
-      updateClientStage(clientId, stage)
-    }
+    if (clientId) updateClientStage(clientId, stage)
     setDraggedClientId(null)
   }
 
-  const handleMove = (clientId: string, stage: PipelineStage) => {
-    updateClientStage(clientId, stage)
-  }
-
+  // Settings
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [localStages, setLocalStages] = useState<
     { id: string; name: string; originalName: string | null }[]
@@ -178,15 +280,9 @@ export default function KanbanBoard() {
       setNewStageName('')
     }
   }
-
-  const handleRemoveStage = (id: string) => {
-    setLocalStages(localStages.filter((s) => s.id !== id))
-  }
-
-  const handleRenameStage = (id: string, newName: string) => {
+  const handleRemoveStage = (id: string) => setLocalStages(localStages.filter((s) => s.id !== id))
+  const handleRenameStage = (id: string, newName: string) =>
     setLocalStages(localStages.map((s) => (s.id === id ? { ...s, name: newName } : s)))
-  }
-
   const moveStageUp = (index: number) => {
     if (index > 0) {
       const newArr = [...localStages]
@@ -196,7 +292,6 @@ export default function KanbanBoard() {
       setLocalStages(newArr)
     }
   }
-
   const moveStageDown = (index: number) => {
     if (index < localStages.length - 1) {
       const newArr = [...localStages]
@@ -206,7 +301,6 @@ export default function KanbanBoard() {
       setLocalStages(newArr)
     }
   }
-
   const handleSaveStages = () => {
     const validStages = localStages.filter((s) => s.name.trim() !== '')
     if (validStages.length > 0) {
@@ -219,145 +313,107 @@ export default function KanbanBoard() {
             uniqueStages.includes(s.name.trim()),
         )
         .map((s) => ({ oldName: s.originalName!, newName: s.name.trim() }))
-
       updatePipelineStages(uniqueStages, renames)
       setIsSettingsOpen(false)
     }
   }
 
+  const visibleStages =
+    filters.columns.length > 0
+      ? pipelineStages.filter((s) => filters.columns.includes(s))
+      : pipelineStages
+
   return (
     <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-muted/10 animate-fade-in">
-      {/* Header */}
-      <div className="flex-none p-4 lg:p-6 border-b bg-background flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-        <div>
-          <h1 className="text-2xl font-display font-bold">Kanban de Clientes</h1>
-          <p className="text-muted-foreground text-sm mt-1 hidden lg:block">
-            Arraste os cards ou use o menu para atualizar o estágio.
-          </p>
-        </div>
+      <div className="flex-none pt-4 lg:pt-6 px-4 lg:px-6 pb-2 border-b bg-background flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-display font-bold">Kanban de Clientes</h1>
+          </div>
 
-        <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto items-start lg:items-center">
-          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="bg-background shrink-0 w-full lg:w-auto">
-                <Settings2 className="h-4 w-4 mr-2" />
-                Personalizar Colunas
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Configurar Colunas do Kanban</DialogTitle>
-                <DialogDescription>
-                  Adicione, remova ou reordene os estágios do seu funil de vendas.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <div className="flex gap-2 mb-4">
-                  <Input
-                    placeholder="Nome do novo estágio..."
-                    value={newStageName}
-                    onChange={(e) => setNewStageName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddStage()}
-                  />
-                  <Button onClick={handleAddStage} type="button" size="icon" className="shrink-0">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <ScrollArea className="h-[300px] pr-4">
-                  <div className="space-y-2">
-                    {localStages.map((stage, idx) => (
-                      <div
-                        key={stage.id}
-                        className="flex items-center gap-2 bg-muted/50 p-2 rounded-md border"
-                      >
-                        <div className="flex flex-col gap-0.5 mr-1 shrink-0">
+          <div className="flex flex-col lg:flex-row gap-3 w-full lg:w-auto items-start lg:items-center">
+            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="bg-background shrink-0 w-full lg:w-auto">
+                  <Settings2 className="h-4 w-4 mr-2" /> Personalizar Colunas
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Configurar Colunas do Kanban</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  <div className="flex gap-2 mb-4">
+                    <Input
+                      placeholder="Nome do novo estágio..."
+                      value={newStageName}
+                      onChange={(e) => setNewStageName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddStage()}
+                    />
+                    <Button onClick={handleAddStage} type="button" size="icon" className="shrink-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-[300px] pr-4">
+                    <div className="space-y-2">
+                      {localStages.map((stage, idx) => (
+                        <div
+                          key={stage.id}
+                          className="flex items-center gap-2 bg-muted/50 p-2 rounded-md border"
+                        >
+                          <div className="flex flex-col gap-0.5 mr-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4"
+                              onClick={() => moveStageUp(idx)}
+                              disabled={idx === 0}
+                            >
+                              <ArrowUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4"
+                              onClick={() => moveStageDown(idx)}
+                              disabled={idx === localStages.length - 1}
+                            >
+                              <ArrowDown className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <Input
+                            value={stage.name}
+                            onChange={(e) => handleRenameStage(stage.id, e.target.value)}
+                            className="flex-1 h-8 text-sm font-medium bg-background"
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-4 w-4"
-                            onClick={() => moveStageUp(idx)}
-                            disabled={idx === 0}
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                            onClick={() => handleRemoveStage(stage.id)}
                           >
-                            <ArrowUp className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4"
-                            onClick={() => moveStageDown(idx)}
-                            disabled={idx === localStages.length - 1}
-                          >
-                            <ArrowDown className="h-3 w-3" />
+                            <X className="h-4 w-4" />
                           </Button>
                         </div>
-                        <Input
-                          value={stage.name}
-                          onChange={(e) => handleRenameStage(stage.id, e.target.value)}
-                          className="flex-1 h-8 text-sm font-medium bg-background"
-                          placeholder="Nome da etapa"
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                          onClick={() => handleRemoveStage(stage.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    {localStages.length === 0 && (
-                      <div className="text-center text-sm text-muted-foreground p-4">
-                        Adicione ao menos um estágio para o seu funil.
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSaveStages} disabled={localStages.length === 0}>
-                  Salvar Alterações
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <div className="flex w-full lg:w-auto gap-2">
-            <div className="relative w-full lg:w-64">
-              {' '}
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-background w-full"
-              />
-            </div>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="shrink-0 lg:hidden bg-background">
-                  <PieChart className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-                <SheetHeader>
-                  <SheetTitle>Dashboard de Canais</SheetTitle>
-                </SheetHeader>
-                <div className="mt-6 h-full">
-                  <ChannelMetrics />
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-          <div className="flex gap-2 w-full overflow-x-auto pb-1 lg:pb-0 scrollbar-none items-center">
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsSettingsOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleSaveStages} disabled={localStages.length === 0}>
+                    Salvar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" className="hidden lg:flex shrink-0 gap-2 bg-background">
-                  <PieChart className="h-4 w-4" />
-                  Métricas
+                  <PieChart className="h-4 w-4" /> Métricas
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
@@ -369,76 +425,245 @@ export default function KanbanBoard() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Select value={filterProductStage} onValueChange={setFilterProductStage}>
-              <SelectTrigger className="w-[160px] bg-background shrink-0">
-                <SelectValue placeholder="Estágio Produto" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Produtos</SelectItem>
-                <SelectItem value="Interesse">Interesse</SelectItem>
-                <SelectItem value="Proposta">Proposta</SelectItem>
-                <SelectItem value="Negociação">Negociação</SelectItem>
-                <SelectItem value="Fechado">Fechado</SelectItem>
-                <SelectItem value="Entregue">Entregue</SelectItem>
-                <SelectItem value="Upsell">Upsell</SelectItem>
-              </SelectContent>
-            </Select>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex gap-2 w-full lg:w-auto relative z-10">
+              <div className="relative w-full lg:w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar nome, tag..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value)
+                    setSearchOpen(true)
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
+                  className="pl-9 bg-background w-full"
+                />
+                {searchOpen && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 mt-1 w-full bg-popover border border-border rounded-md shadow-md z-50 overflow-hidden">
+                    <div className="p-1">
+                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                        Sugestões
+                      </div>
+                      {suggestions.map((s, i) => (
+                        <div
+                          key={i}
+                          className="px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer rounded-sm flex items-center gap-2"
+                          onClick={() => {
+                            setSearchTerm(s.value)
+                            setSearchOpen(false)
+                            if (s.type === 'tag') {
+                              toggleFilter('tags', s.value)
+                              setSearchTerm('')
+                            }
+                          }}
+                        >
+                          {s.type === 'client' && <User className="h-3 w-3" />}
+                          {s.type === 'phone' && <Phone className="h-3 w-3" />}
+                          {s.type === 'tag' && <Tag className="h-3 w-3" />}
+                          <span className="truncate">{s.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    id="date"
-                    variant={'outline'}
-                    className={cn(
-                      'w-[260px] justify-start text-left font-normal bg-background',
-                      !dateRange && 'text-muted-foreground',
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })} -{' '}
-                          {format(dateRange.to, 'dd/MM/yyyy', { locale: ptBR })}
-                        </>
-                      ) : (
-                        format(dateRange.from, 'dd/MM/yyyy', { locale: ptBR })
-                      )
-                    ) : (
-                      <span>Período (Qualquer tempo)</span>
+                  <Button variant="outline" className="bg-background shrink-0">
+                    <Filter className="h-4 w-4 lg:mr-2" />
+                    <span className="hidden lg:inline">Filtros</span>
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="ml-1.5 px-1 rounded-sm h-5 font-normal">
+                        {activeFilterCount}
+                      </Badge>
                     )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                    locale={ptBR}
-                  />
+                <PopoverContent className="w-[340px] p-0" align="end">
+                  <ScrollArea className="h-[400px]">
+                    <div className="p-4 space-y-5">
+                      <div className="space-y-2.5">
+                        <h4 className="text-sm font-medium leading-none">Coluna do Kanban</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {pipelineStages.map((stage) => (
+                            <Badge
+                              key={stage}
+                              variant={filters.columns.includes(stage) ? 'default' : 'outline'}
+                              className="cursor-pointer font-normal"
+                              onClick={() => toggleFilter('columns', stage)}
+                            >
+                              {stage}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-2.5">
+                        <h4 className="text-sm font-medium leading-none">Status de Produto</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            'Interesse',
+                            'Proposta',
+                            'Negociação',
+                            'Fechado',
+                            'Entregue',
+                            'Upsell',
+                          ].map((stage) => (
+                            <Badge
+                              key={stage}
+                              variant={
+                                filters.productStages.includes(stage) ? 'default' : 'outline'
+                              }
+                              className="cursor-pointer font-normal"
+                              onClick={() => toggleFilter('productStages', stage)}
+                            >
+                              {stage}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-2.5">
+                        <h4 className="text-sm font-medium leading-none">Tags</h4>
+                        {availableTags.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">Nenhuma tag em uso.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {availableTags.map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant={filters.tags.includes(tag) ? 'default' : 'outline'}
+                                className="cursor-pointer font-normal"
+                                onClick={() => toggleFilter('tags', tag)}
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <Separator />
+                      <div className="space-y-2.5">
+                        <h4 className="text-sm font-medium leading-none">Última Interação</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { label: 'Qualquer', value: 'all' },
+                            { label: 'Últimos 7 dias', value: '7' },
+                            { label: 'Últimos 30 dias', value: '30' },
+                            { label: 'Últimos 90 dias', value: '90' },
+                          ].map((opt) => (
+                            <Badge
+                              key={opt.value}
+                              variant={
+                                filters.lastInteraction === opt.value ? 'default' : 'outline'
+                              }
+                              className="cursor-pointer font-normal"
+                              onClick={() =>
+                                setFilters((f) => ({ ...f, lastInteraction: opt.value as any }))
+                              }
+                            >
+                              {opt.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-2.5">
+                        <h4 className="text-sm font-medium leading-none">Número de Produtos</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { label: 'Qualquer', value: 'all' },
+                            { label: 'Nenhum', value: '0' },
+                            { label: '1 a 2', value: '1-2' },
+                            { label: '3 ou mais', value: '3+' },
+                          ].map((opt) => (
+                            <Badge
+                              key={opt.value}
+                              variant={filters.productCount === opt.value ? 'default' : 'outline'}
+                              className="cursor-pointer font-normal"
+                              onClick={() =>
+                                setFilters((f) => ({ ...f, productCount: opt.value as any }))
+                              }
+                            >
+                              {opt.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </ScrollArea>
                 </PopoverContent>
               </Popover>
-              {dateRange && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setDateRange(undefined)}
-                  className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
-                  title="Limpar período"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
             </div>
           </div>
         </div>
+
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-muted-foreground mr-1">Filtros ativos:</span>
+            {filters.columns.map((c) => (
+              <Badge key={`col-${c}`} variant="secondary" className="gap-1 px-2 font-normal">
+                Coluna: {c}{' '}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-foreground"
+                  onClick={() => toggleFilter('columns', c)}
+                />
+              </Badge>
+            ))}
+            {filters.productStages.map((s) => (
+              <Badge key={`stage-${s}`} variant="secondary" className="gap-1 px-2 font-normal">
+                Status: {s}{' '}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-foreground"
+                  onClick={() => toggleFilter('productStages', s)}
+                />
+              </Badge>
+            ))}
+            {filters.tags.map((t) => (
+              <Badge key={`tag-${t}`} variant="secondary" className="gap-1 px-2 font-normal">
+                Tag: {t}{' '}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-foreground"
+                  onClick={() => toggleFilter('tags', t)}
+                />
+              </Badge>
+            ))}
+            {filters.lastInteraction !== 'all' && (
+              <Badge variant="secondary" className="gap-1 px-2 font-normal">
+                Interação: &lt;= {filters.lastInteraction}d{' '}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-foreground"
+                  onClick={() => setFilters((f) => ({ ...f, lastInteraction: 'all' }))}
+                />
+              </Badge>
+            )}
+            {filters.productCount !== 'all' && (
+              <Badge variant="secondary" className="gap-1 px-2 font-normal">
+                Produtos: {filters.productCount}{' '}
+                <X
+                  className="h-3 w-3 cursor-pointer hover:text-foreground"
+                  onClick={() => setFilters((f) => ({ ...f, productCount: 'all' }))}
+                />
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilters(DEFAULT_FILTERS)
+                setSearchTerm('')
+              }}
+              className="h-6 text-xs px-2 text-muted-foreground hover:text-foreground"
+            >
+              Limpar todos
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* Metrics Dashboard */}
       <div className="flex-none px-4 lg:px-6 pt-4 pb-1 border-b bg-muted/5 shadow-inner">
         <ScrollArea className="w-full whitespace-nowrap" type="auto">
           <div className="flex w-max space-x-4 pb-3">
@@ -450,7 +675,7 @@ export default function KanbanBoard() {
                 {filteredClients.length}
               </div>
             </Card>
-            {pipelineStages.map((stage) => {
+            {visibleStages.map((stage) => {
               const count = filteredClients.filter((c) => c.pipeline_stage === stage).length
               return (
                 <Card
@@ -474,10 +699,9 @@ export default function KanbanBoard() {
         </ScrollArea>
       </div>
 
-      {/* Kanban Area */}
       <ScrollArea className="flex-1 w-full" type="auto">
         <div className="flex gap-4 p-4 lg:p-6 h-full min-h-[500px] items-start snap-x snap-mandatory">
-          {pipelineStages.map((stage) => {
+          {visibleStages.map((stage) => {
             const stageClients = filteredClients.filter((c) => c.pipeline_stage === stage)
             return (
               <div
@@ -503,7 +727,6 @@ export default function KanbanBoard() {
                           new Date(client.updatedAt || client.createdAt),
                         ),
                       )
-
                       let daysColor = 'text-muted-foreground'
                       if (daysInStage >= 15) daysColor = 'text-red-500 font-medium'
                       else if (daysInStage >= 7) daysColor = 'text-amber-500 font-medium'
@@ -521,25 +744,27 @@ export default function KanbanBoard() {
                         >
                           <div className="flex items-start justify-between gap-2 mb-3">
                             <div className="flex items-center gap-3 min-w-0">
-                              <Avatar className="h-10 w-10 border shadow-sm shrink-0">
+                              <Avatar
+                                className="h-10 w-10 border shadow-sm shrink-0 cursor-pointer"
+                                onClick={() => openClientPanel(client.id)}
+                              >
                                 <AvatarImage src={client.avatar || ''} />
                                 <AvatarFallback>
                                   {client.name.substring(0, 2).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="min-w-0 flex-1">
-                                <Link
-                                  to={`/clientes/${client.id}`}
-                                  className="font-medium text-sm hover:text-primary transition-colors truncate block"
+                                <span
+                                  onClick={() => openClientPanel(client.id)}
+                                  className="font-medium text-sm hover:text-primary transition-colors truncate block cursor-pointer"
                                 >
                                   {client.name}
-                                </Link>
+                                </span>
                                 <p className="text-xs text-muted-foreground truncate">
                                   {client.email || client.phone}
                                 </p>
                               </div>
                             </div>
-
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
@@ -561,10 +786,10 @@ export default function KanbanBoard() {
                                     .map((s) => (
                                       <DropdownMenuItem
                                         key={s}
-                                        onClick={() => handleMove(client.id, s)}
+                                        onClick={() => updateClientStage(client.id, s)}
                                         className="text-xs cursor-pointer"
                                       >
-                                        <ArrowRightLeft className="mr-2 h-3 w-3 text-muted-foreground" />
+                                        <ArrowRightLeft className="mr-2 h-3 w-3 text-muted-foreground" />{' '}
                                         {s}
                                       </DropdownMenuItem>
                                     ))}
@@ -572,7 +797,6 @@ export default function KanbanBoard() {
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
-
                           {clientProducts.length > 0 ? (
                             <div className="space-y-2 mb-3">
                               {clientProducts.slice(0, 2).map((product) => (
@@ -606,7 +830,6 @@ export default function KanbanBoard() {
                               Nenhum produto atrelado
                             </div>
                           )}
-
                           <div className="flex items-center justify-between pt-2 border-t border-border/50">
                             <div
                               className={cn('flex items-center gap-1 text-[10px]', daysColor)}

@@ -91,6 +91,7 @@ export type Database = {
           email: string | null
           id: string
           name: string
+          notes: string | null
           phone: string | null
           pipeline_stage: string
           sentiment_tags: string[] | null
@@ -107,6 +108,7 @@ export type Database = {
           email?: string | null
           id: string
           name: string
+          notes?: string | null
           phone?: string | null
           pipeline_stage?: string
           sentiment_tags?: string[] | null
@@ -123,6 +125,7 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string
+          notes?: string | null
           phone?: string | null
           pipeline_stage?: string
           sentiment_tags?: string[] | null
@@ -589,6 +592,7 @@ export const Constants = {
 //   utm_campaign: text (nullable)
 //   utm_source: text (nullable)
 //   utm_medium: text (nullable)
+//   notes: text (nullable)
 // Table: google_calendar_credentials
 //   user_id: text (not null)
 //   access_token: text (nullable)
