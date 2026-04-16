@@ -1,171 +1,138 @@
 import { supabase } from '@/lib/supabase/client'
-import { Client, PipelineStage } from '@/lib/types'
 
-// Centraliza a validação do token JWT e injeção do user_id
-async function checkAuth() {
+export async function getClients() {
   const {
     data: { session },
   } = await supabase.auth.getSession()
-  if (!session) {
-    window.location.href = '/login'
-    return null
-  }
-  return session.user
-}
-
-export async function getClients() {
-  const user = await checkAuth()
-  if (!user) {
-    return { success: false, error: 'Faça login primeiro', code: '401' }
+  if (!session?.user) {
+    console.error('Erro: Usuário não autenticado')
+    return []
   }
 
   const { data, error } = await supabase
     .from('clients')
     .select('*')
+    .eq('user_id', session.user.id)
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Supabase Error:', error)
-    return {
-      success: false,
-      error: error.code === '42501' ? 'Permissão negada para listar clientes' : error.message,
-      code: error.code,
+    if (error.code === '401') {
+      console.error('Erro: Usuário não autenticado')
     }
+    console.error('Erro ao buscar clientes:', error)
+    return []
   }
 
-  const formattedData = data
-    ? data.map((c) => ({
-        id: c.id,
-        name: c.name,
-        email: c.email || '',
-        phone: c.phone || '',
-        avatar: c.avatar || '',
-        status: c.status as 'active' | 'archived',
-        pipeline_stage: c.pipeline_stage || 'Lead',
-        createdAt: c.created_at,
-        updatedAt: c.updated_at,
-        notes: c.notes || '',
-        behavioral_profile: c.behavioral_profile || '',
-        sentiment_tags: c.sentiment_tags || [],
-        utm_source: c.utm_source || '',
-        utm_campaign: c.utm_campaign || '',
-        utm_medium: c.utm_medium || '',
-        opt_out: (c as any).opt_out || false,
-      }))
-    : []
-
-  // Preservando array proxy para compatibilidade, mas retornando no formato padrão
-  const res: any = formattedData
-  res.success = true
-  res.data = formattedData
-  return res
+  return data || []
 }
 
-export async function createClient(data: {
-  name: string
-  email?: string
-  phone?: string
-  avatar?: string
-  pipeline_stage?: string
-  behavioral_profile?: string
-  notes?: string
-  utm_source?: string
-  utm_campaign?: string
-  utm_medium?: string
-}) {
-  const user = await checkAuth()
-  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
+export async function createClient(dados: any) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user) return { success: false, error: 'Faça login primeiro' }
 
-  const { data: result, error } = await supabase
+  const newId = `c${Date.now()}`
+
+  const { data, error } = await supabase
     .from('clients')
     .insert({
-      id: crypto.randomUUID(),
-      user_id: user.id, // OBRIGATÓRIO - RLS valida
-      name: data.name,
-      email: data.email || null,
-      phone: data.phone || null,
-      avatar: data.avatar || null,
-      pipeline_stage: data.pipeline_stage || 'Lead',
-      behavioral_profile: data.behavioral_profile || null,
-      notes: data.notes || null,
-      utm_source: data.utm_source || null,
-      utm_campaign: data.utm_campaign || null,
-      utm_medium: data.utm_medium || null,
-      status: 'active',
+      id: newId,
+      user_id: session.user.id,
+      name: dados.name,
+      email: dados.email || null,
+      phone: dados.phone || null,
+      avatar: dados.avatar || null,
+      status: dados.status || 'active',
+      pipeline_stage: dados.pipeline_stage || 'Lead',
+      behavioral_profile: dados.behavioral_profile || null,
+      notes: dados.notes || null,
+      utm_source: dados.utm_source || null,
+      utm_campaign: dados.utm_campaign || null,
+      utm_medium: dados.utm_medium || null,
+      sentiment_tags: [],
     })
     .select()
     .single()
 
   if (error) {
-    const errorMsg =
-      error.code === '42501'
-        ? 'Erro RLS: Você não tem permissão para criar clientes'
-        : error.message
-    console.error(errorMsg)
-    return { success: false, error: errorMsg, code: error.code }
+    if (error.code === '42501') {
+      console.error('Erro RLS: Você não tem permissão para criar clientes')
+      return { success: false, error: 'Permissão negada' }
+    }
+    return { success: false, error: error.message }
   }
 
-  return { success: true, data: result }
+  return { success: true, data }
 }
 
-export async function updateClientPipelineStage(id: string, stage: PipelineStage) {
-  const user = await checkAuth()
-  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
+export async function updateClientPipelineStage(clienteId: string, newStage: string) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user) throw new Error('Usuário não autenticado')
 
   const { data, error } = await supabase
     .from('clients')
-    .update({
-      pipeline_stage: stage,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
+    .update({ pipeline_stage: newStage })
+    .eq('id', clienteId)
+    .eq('user_id', session.user.id)
     .select()
 
   if (error) {
-    const errorMsg = error.code === '42501' ? 'Erro RLS: Este cliente não é seu' : error.message
-    console.error(errorMsg)
-    return { success: false, error: errorMsg, code: error.code }
+    if (error.code === '42501') {
+      console.error('Erro RLS: Este cliente não é seu')
+      throw new Error('Você não pode editar este cliente')
+    }
+    throw error
   }
-
-  return { success: true, data }
+  return data
 }
 
-export async function updateClientOptOut(id: string, optOut: boolean) {
-  const user = await checkAuth()
-  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
+export async function updateClient(clienteId: string, dados: any) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user) return { success: false, error: 'Usuário não autenticado' }
 
   const { data, error } = await supabase
     .from('clients')
-    .update({
-      opt_out: optOut,
-      updated_at: new Date().toISOString(),
-    } as any)
-    .eq('id', id)
+    .update(dados)
+    .eq('id', clienteId)
+    .eq('user_id', session.user.id)
     .select()
+    .single()
 
   if (error) {
-    const errorMsg = error.code === '42501' ? 'Erro RLS: Este cliente não é seu' : error.message
-    console.error(errorMsg)
-    return { success: false, error: errorMsg, code: error.code }
+    if (error.code === '42501') {
+      console.error('Erro RLS: Este cliente não é seu')
+      return { success: false, error: 'Você não pode editar este cliente' }
+    }
+    return { success: false, error: error.message }
   }
 
   return { success: true, data }
 }
 
-export async function deleteClient(id: string) {
-  const user = await checkAuth()
-  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
+export async function deleteClient(clienteId: string) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.user) return { success: false, error: 'Usuário não autenticado' }
 
-  const { data, error } = await supabase.from('clients').delete().eq('id', id)
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', clienteId)
+    .eq('user_id', session.user.id)
 
   if (error) {
-    const errorMsg =
-      error.code === '42501'
-        ? 'Erro RLS: Permissão negada para deletar este cliente'
-        : error.message
-    console.error(errorMsg)
-    return { success: false, error: errorMsg, code: error.code }
+    if (error.code === '42501') {
+      console.error('Erro RLS: Você não pode deletar este cliente')
+      return { success: false, error: 'Permissão negada' }
+    }
+    return { success: false, error: error.message }
   }
 
-  return { success: true, data }
+  return { success: true }
 }

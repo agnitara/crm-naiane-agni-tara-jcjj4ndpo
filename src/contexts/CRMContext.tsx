@@ -219,12 +219,28 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProductStage = async (productId: string, newStage: Stage) => {
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, stage: newStage } : p)))
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session?.user) {
+      toast.error('Usuário não autenticado')
+      refreshProducts()
+      return
+    }
+
     const { error } = await supabase
       .from('products')
       .update({ stage: newStage })
       .eq('id', productId)
+      .eq('user_id', session.user.id)
+
     if (error) {
-      toast.error('Erro ao atualizar produto')
+      if (error.code === '42501') {
+        toast.error('Erro RLS: Este produto não é seu')
+      } else {
+        toast.error('Erro ao atualizar produto')
+      }
       refreshProducts()
     }
   }
@@ -237,16 +253,29 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
     )
     try {
       await updateClientPipelineStage(clientId, newStage)
-    } catch (error) {
-      toast.error('Erro ao atualizar estágio do cliente')
+    } catch (error: any) {
+      if (error.message && error.message.includes('Você não pode editar')) {
+        toast.error('Erro RLS: Este cliente não é seu')
+      } else {
+        toast.error('Erro ao atualizar estágio do cliente')
+      }
       setClients(previous)
     }
   }
 
   const addClient = async (clientData: any) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session?.user) {
+      toast.error('Usuário não autenticado')
+      return
+    }
+
     const newId = `c${Date.now()}`
     const { error } = await supabase.from('clients').insert({
       id: newId,
+      user_id: session.user.id,
       name: clientData.name,
       email: clientData.email,
       phone: clientData.phone,
@@ -254,23 +283,44 @@ export const CRMProvider = ({ children }: { children: ReactNode }) => {
       status: clientData.status || 'active',
       pipeline_stage: clientData.pipeline_stage || 'Lead',
     })
+
     if (!error) {
       toast.success('Cliente adicionado com sucesso!')
       refreshClients()
     } else {
-      toast.error('Erro ao adicionar cliente')
+      if (error.code === '42501') {
+        toast.error('Permissão negada (RLS)')
+      } else {
+        toast.error('Erro ao adicionar cliente')
+      }
     }
   }
 
   const deleteClientSoft = async (clientId: string) => {
     const previous = [...clients]
     setClients((prev) => prev.map((c) => (c.id === clientId ? { ...c, status: 'archived' } : c)))
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session?.user) {
+      toast.error('Usuário não autenticado')
+      setClients(previous)
+      return
+    }
+
     const { error } = await supabase
       .from('clients')
       .update({ status: 'archived' })
       .eq('id', clientId)
+      .eq('user_id', session.user.id)
+
     if (error) {
-      toast.error('Erro ao arquivar cliente')
+      if (error.code === '42501') {
+        toast.error('Erro RLS: Este cliente não é seu')
+      } else {
+        toast.error('Erro ao arquivar cliente')
+      }
       setClients(previous)
     } else {
       toast.info('Cliente arquivado com sucesso.')
