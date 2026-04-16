@@ -143,6 +143,7 @@ export type Database = {
           sentiment_tags: string[] | null
           status: string
           updated_at: string
+          user_id: string | null
           utm_campaign: string | null
           utm_medium: string | null
           utm_source: string | null
@@ -162,6 +163,7 @@ export type Database = {
           sentiment_tags?: string[] | null
           status?: string
           updated_at?: string
+          user_id?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
@@ -181,6 +183,7 @@ export type Database = {
           sentiment_tags?: string[] | null
           status?: string
           updated_at?: string
+          user_id?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
@@ -428,6 +431,7 @@ export type Database = {
           stage: string
           start_date: string | null
           updated_at: string
+          user_id: string | null
           value: number
         }
         Insert: {
@@ -440,6 +444,7 @@ export type Database = {
           stage: string
           start_date?: string | null
           updated_at?: string
+          user_id?: string | null
           value?: number
         }
         Update: {
@@ -452,6 +457,7 @@ export type Database = {
           stage?: string
           start_date?: string | null
           updated_at?: string
+          user_id?: string | null
           value?: number
         }
         Relationships: []
@@ -688,6 +694,7 @@ export const Constants = {
 //   notes: text (nullable)
 //   opt_out: boolean (not null, default: false)
 //   last_read_at: timestamp with time zone (not null, default: now())
+//   user_id: uuid (nullable, default: auth.uid())
 // Table: google_calendar_credentials
 //   user_id: text (not null)
 //   access_token: text (nullable)
@@ -757,6 +764,7 @@ export const Constants = {
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
 //   deleted_at: timestamp with time zone (nullable)
+//   user_id: uuid (nullable, default: auth.uid())
 // Table: user_settings
 //   user_id: text (not null)
 //   pipeline_stages: _text (not null, default: ARRAY['Lead'::text, 'Prospect'::text, 'Qualificado'::text, 'Em Tratativa'::text, 'Proposta'::text, 'Negociação'::text, 'Ativo'::text, 'Concluído'::text, 'Inativo'::text])
@@ -776,6 +784,7 @@ export const Constants = {
 //   PRIMARY KEY client_suggestions_pkey: PRIMARY KEY (id)
 // Table: clients
 //   PRIMARY KEY clients_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY clients_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: google_calendar_credentials
 //   PRIMARY KEY google_calendar_credentials_pkey: PRIMARY KEY (user_id)
 // Table: knowledge_chunks
@@ -797,6 +806,7 @@ export const Constants = {
 //   PRIMARY KEY product_types_pkey: PRIMARY KEY (id)
 // Table: products
 //   PRIMARY KEY products_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY products_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: user_settings
 //   PRIMARY KEY user_settings_pkey: PRIMARY KEY (user_id)
 

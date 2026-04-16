@@ -90,24 +90,29 @@ export default function ClientList() {
 
     try {
       setIsCreating(true)
-      const newClient = await createClient(newClientData)
-      toast.success('Cliente criado com sucesso!')
-      setIsNewClientOpen(false)
-      setNewClientData({
-        name: '',
-        email: '',
-        phone: '',
-        pipeline_stage: 'Lead',
-        behavioral_profile: '',
-        notes: '',
-        utm_source: '',
-        utm_campaign: '',
-        utm_medium: '',
-      })
-      // Small delay to allow the user to see the success before redirect
-      setTimeout(() => {
-        window.location.href = `/clientes/${newClient.id}`
-      }, 500)
+      const result = await createClient(newClientData)
+
+      if (result.success) {
+        toast.success('Cliente criado com sucesso!')
+        setIsNewClientOpen(false)
+        setNewClientData({
+          name: '',
+          email: '',
+          phone: '',
+          pipeline_stage: 'Lead',
+          behavioral_profile: '',
+          notes: '',
+          utm_source: '',
+          utm_campaign: '',
+          utm_medium: '',
+        })
+        // Small delay to allow the user to see the success before redirect
+        setTimeout(() => {
+          window.location.href = `/clientes/${result.data.id}`
+        }, 500)
+      } else {
+        toast.error(`Erro ao criar cliente: ${result.error}`)
+      }
     } catch (error: any) {
       toast.error(`Erro ao criar cliente: ${error?.message || 'Tente novamente'}`)
       console.error(error)

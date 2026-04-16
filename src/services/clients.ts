@@ -8,54 +8,63 @@ async function checkAuth() {
   } = await supabase.auth.getSession()
   if (!session) {
     window.location.href = '/login'
-    throw new Error('401: Não autenticado. Por favor, faça login novamente.')
+    return null
   }
-  return session.user.id
+  return session.user
 }
 
-// Interceptador para tratar erros 42501 (Row-Level Security)
-function handleError(error: any) {
-  if (error?.code === '42501') {
-    throw new Error(
-      '42501: Erro de política de segurança (RLS). Você não tem acesso a esta operação.',
-    )
+export async function getClients() {
+  const user = await checkAuth()
+  if (!user) {
+    const err: any = []
+    err.success = false
+    err.error = '401: Usuário não autenticado. Faça login primeiro'
+    return err
   }
-  throw error
-}
 
-export async function getClients(): Promise<Client[]> {
-  try {
-    await checkAuth()
-    const { data, error } = await supabase
-      .from('clients')
-      .select('*')
-      .order('created_at', { ascending: false })
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('user_id', user.id) // RLS faz isso automaticamente
+    .order('created_at', { ascending: false })
 
-    if (error) handleError(error)
-    if (!data) return []
-
-    return data.map((c) => ({
-      id: c.id,
-      name: c.name,
-      email: c.email || '',
-      phone: c.phone || '',
-      avatar: c.avatar || '',
-      status: c.status as 'active' | 'archived',
-      pipeline_stage: c.pipeline_stage || 'Lead',
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-      notes: c.notes || '',
-      behavioral_profile: c.behavioral_profile || '',
-      sentiment_tags: c.sentiment_tags || [],
-      utm_source: c.utm_source || '',
-      utm_campaign: c.utm_campaign || '',
-      utm_medium: c.utm_medium || '',
-      opt_out: (c as any).opt_out || false,
-    }))
-  } catch (error) {
-    console.error('Error fetching clients:', error)
-    return []
+  if (error) {
+    console.error('Supabase Error:', error)
+    const err: any = []
+    err.success = false
+    err.error =
+      error.code === '42501'
+        ? '42501: Erro de política de segurança (RLS). Permissão negada.'
+        : error.message
+    return err
   }
+
+  const formattedData = data
+    ? data.map((c) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email || '',
+        phone: c.phone || '',
+        avatar: c.avatar || '',
+        status: c.status as 'active' | 'archived',
+        pipeline_stage: c.pipeline_stage || 'Lead',
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        notes: c.notes || '',
+        behavioral_profile: c.behavioral_profile || '',
+        sentiment_tags: c.sentiment_tags || [],
+        utm_source: c.utm_source || '',
+        utm_campaign: c.utm_campaign || '',
+        utm_medium: c.utm_medium || '',
+        opt_out: (c as any).opt_out || false,
+      }))
+    : []
+
+  // Retorna array enriquecido para compatibilidade com chamadas não refatoradas
+  const res: any = formattedData
+  res.success = true
+  res.data = formattedData
+  return res
 }
 
 export async function createClient(data: {
@@ -69,13 +78,14 @@ export async function createClient(data: {
   utm_campaign?: string
   utm_medium?: string
 }) {
-  const userId = await checkAuth()
+  const user = await checkAuth()
+  if (!user) return { success: false, error: '401: Faça login primeiro' }
 
   const { data: result, error } = await supabase
     .from('clients')
     .insert({
       id: crypto.randomUUID(),
-      user_id: userId,
+      user_id: user.id, // OBRIGATÓRIO - RLS valida
       name: data.name,
       email: data.email || null,
       phone: data.phone || null,
@@ -90,32 +100,65 @@ export async function createClient(data: {
     .select()
     .single()
 
-  if (error) handleError(error)
-  return result
+  if (error) {
+    const errorMsg =
+      error.code === '42501'
+        ? '42501: Erro RLS. Você não tem permissão para criar clientes'
+        : error.message
+    return { success: false, error: errorMsg }
+  }
+
+  const res = { success: true, data: result }
+  Object.assign(res, result)
+  return res
 }
 
 export async function updateClientPipelineStage(id: string, stage: PipelineStage) {
-  await checkAuth()
-  const { error } = await supabase
+  const user = await checkAuth()
+  if (!user) return { success: false, error: '401: Faça login primeiro' }
+
+  const { data, error } = await supabase
     .from('clients')
     .update({
       pipeline_stage: stage,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('user_id', user.id) // RLS
+    .select()
 
-  if (error) handleError(error)
+  if (error) {
+    const errorMsg =
+      error.code === '42501' ? '42501: Erro RLS. Este cliente não é seu' : error.message
+    return { success: false, error: errorMsg }
+  }
+
+  const res = { success: true, data }
+  Object.assign(res, data)
+  return res
 }
 
 export async function updateClientOptOut(id: string, optOut: boolean) {
-  await checkAuth()
-  const { error } = await supabase
+  const user = await checkAuth()
+  if (!user) return { success: false, error: '401: Faça login primeiro' }
+
+  const { data, error } = await supabase
     .from('clients')
     .update({
       opt_out: optOut,
       updated_at: new Date().toISOString(),
     } as any)
     .eq('id', id)
+    .eq('user_id', user.id) // RLS
+    .select()
 
-  if (error) handleError(error)
+  if (error) {
+    const errorMsg =
+      error.code === '42501' ? '42501: Erro RLS. Este cliente não é seu' : error.message
+    return { success: false, error: errorMsg }
+  }
+
+  const res = { success: true, data }
+  Object.assign(res, data)
+  return res
 }

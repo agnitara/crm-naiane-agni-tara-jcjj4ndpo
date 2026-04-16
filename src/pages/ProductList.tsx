@@ -43,8 +43,12 @@ export default function ProductList() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const data = await getProducts()
-      setProducts(data || [])
+      const result = await getProducts()
+      if (result.success) {
+        setProducts(result.data || [])
+      } else {
+        console.error('Error fetching products:', result.error)
+      }
     } catch (error) {
       console.error('Error fetching products:', error)
     } finally {
