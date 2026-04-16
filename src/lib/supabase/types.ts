@@ -805,7 +805,13 @@ export const Constants = {
 //   Policy "Users can manage their own calendar events" (ALL, PERMISSIVE) roles={public}
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 //     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//   Policy "authenticated_all_calendar_events" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: campaigns
+//   Policy "authenticated_all_campaigns" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_delete_campaigns" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "authenticated_insert_campaigns" (INSERT, PERMISSIVE) roles={authenticated}
@@ -816,6 +822,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: client_suggestions
+//   Policy "authenticated_all_client_suggestions" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_delete_client_suggestions" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "authenticated_insert_client_suggestions" (INSERT, PERMISSIVE) roles={authenticated}
@@ -826,6 +835,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: clients
+//   Policy "authenticated_all_clients" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_delete_clients" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "authenticated_insert_clients" (INSERT, PERMISSIVE) roles={authenticated}
@@ -839,7 +851,13 @@ export const Constants = {
 //   Policy "Users can manage their own credentials" (ALL, PERMISSIVE) roles={public}
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 //     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//   Policy "authenticated_all_google_calendar_credentials" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: knowledge_chunks
+//   Policy "authenticated_all_knowledge_chunks" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_insert_chunks" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
 //   Policy "authenticated_select_chunks" (SELECT, PERMISSIVE) roles={authenticated}
@@ -847,6 +865,9 @@ export const Constants = {
 //   Policy "authenticated_update_chunks" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 // Table: message_suggestions
+//   Policy "authenticated_all_message_suggestions" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_insert_suggestions" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
 //   Policy "authenticated_select_suggestions" (SELECT, PERMISSIVE) roles={authenticated}
@@ -857,7 +878,13 @@ export const Constants = {
 //   Policy "Users can manage their own templates" (ALL, PERMISSIVE) roles={public}
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 //     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//   Policy "authenticated_all_message_templates" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: messages
+//   Policy "authenticated_all_messages" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_insert_messages" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: true
 //   Policy "authenticated_select_messages" (SELECT, PERMISSIVE) roles={authenticated}
@@ -866,7 +893,13 @@ export const Constants = {
 //   Policy "Users can manage their own meta credentials" (ALL, PERMISSIVE) roles={public}
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 //     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//   Policy "authenticated_all_meta_credentials" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: product_documents
+//   Policy "authenticated_all_product_documents" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_delete_documents" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "authenticated_insert_documents" (INSERT, PERMISSIVE) roles={authenticated}
@@ -877,6 +910,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: product_types
+//   Policy "authenticated_all_product_types" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_delete_product_types" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "authenticated_insert_product_types" (INSERT, PERMISSIVE) roles={authenticated}
@@ -887,6 +923,9 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: products
+//   Policy "authenticated_all_products" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 //   Policy "authenticated_delete_products" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //   Policy "authenticated_insert_products" (INSERT, PERMISSIVE) roles={authenticated}
@@ -900,6 +939,9 @@ export const Constants = {
 //   Policy "Users can manage their own settings" (ALL, PERMISSIVE) roles={public}
 //     USING: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
 //     WITH CHECK: (((auth.uid())::text = user_id) OR (auth.role() = 'anon'::text) OR (user_id ~~ 'user_%'::text))
+//   Policy "authenticated_all_user_settings" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION match_knowledge_chunks(vector, double precision, integer)

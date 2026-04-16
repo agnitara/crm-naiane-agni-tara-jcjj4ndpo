@@ -418,6 +418,17 @@ export default function ClientList() {
                     placeholder="Ex: lancamento_v2"
                   />
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="utm_medium">Mídia (UTM Medium)</Label>
+                  <Input
+                    id="utm_medium"
+                    value={newClientData.utm_medium}
+                    onChange={(e) =>
+                      setNewClientData({ ...newClientData, utm_medium: e.target.value })
+                    }
+                    placeholder="Ex: cpc, email, social"
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter className="pt-4 mt-2 shrink-0 border-t">

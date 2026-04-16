@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { supabase } from '@/lib/supabase/client'
+import { getProducts } from '@/services/products'
 import {
   Table,
   TableBody,
@@ -43,13 +43,7 @@ export default function ProductList() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, clients(id, name, avatar)')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
+      const data = await getProducts()
       setProducts(data || [])
     } catch (error) {
       console.error('Error fetching products:', error)
