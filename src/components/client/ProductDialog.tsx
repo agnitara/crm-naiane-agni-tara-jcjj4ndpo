@@ -110,13 +110,20 @@ export function ProductDialog({
         startDate: new Date(data.startDate).toISOString(),
         expectedDate: new Date(data.expectedDate).toISOString(),
       }
+
+      let res
       if (product) {
-        await updateProduct(product.id, payload)
-        toast.success('Produto atualizado com sucesso')
+        res = await updateProduct(product.id, payload)
       } else {
-        await createProduct(payload)
-        toast.success('Produto criado com sucesso')
+        res = await createProduct(payload)
       }
+
+      if (!res.success) {
+        toast.error(`Erro: ${res.error}`)
+        return
+      }
+
+      toast.success(product ? 'Produto atualizado com sucesso' : 'Produto criado com sucesso')
       onSuccess()
       onClose()
     } catch (e: any) {

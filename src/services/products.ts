@@ -17,7 +17,8 @@ export const getProducts = async (clientId?: string) => {
   if (!user) {
     const err: any = []
     err.success = false
-    err.error = '401: Usuário não autenticado. Faça login primeiro'
+    err.error = 'Faça login primeiro'
+    err.code = '401'
     return err
   }
 
@@ -34,7 +35,8 @@ export const getProducts = async (clientId?: string) => {
   if (error) {
     const err: any = []
     err.success = false
-    err.error = error.code === '42501' ? '42501: Erro RLS. Permissão negada' : error.message
+    err.error = error.code === '42501' ? 'Erro RLS. Permissão negada' : error.message
+    err.code = error.code
     return err
   }
 
@@ -46,7 +48,7 @@ export const getProducts = async (clientId?: string) => {
 
 export const createProduct = async (product: Partial<Product>) => {
   const user = await checkAuth()
-  if (!user) return { success: false, error: '401: Faça login primeiro' }
+  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
 
   const { data, error } = await supabase
     .from('products')
@@ -65,9 +67,9 @@ export const createProduct = async (product: Partial<Product>) => {
   if (error) {
     const errorMsg =
       error.code === '42501'
-        ? '42501: Erro RLS. Você não tem permissão para criar produtos'
+        ? 'Erro RLS. Você não tem permissão para criar produtos'
         : error.message
-    return { success: false, error: errorMsg }
+    return { success: false, error: errorMsg, code: error.code }
   }
 
   const res = { success: true, data }
@@ -77,7 +79,7 @@ export const createProduct = async (product: Partial<Product>) => {
 
 export const updateProduct = async (id: string, updates: Partial<Product>) => {
   const user = await checkAuth()
-  if (!user) return { success: false, error: '401: Faça login primeiro' }
+  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
 
   const payload: any = {}
   if (updates.name !== undefined) payload.name = updates.name
@@ -97,9 +99,8 @@ export const updateProduct = async (id: string, updates: Partial<Product>) => {
     .single()
 
   if (error) {
-    const errorMsg =
-      error.code === '42501' ? '42501: Erro RLS. Este produto não é seu' : error.message
-    return { success: false, error: errorMsg }
+    const errorMsg = error.code === '42501' ? 'Erro RLS. Este produto não é seu' : error.message
+    return { success: false, error: errorMsg, code: error.code }
   }
 
   const res = { success: true, data }
@@ -109,7 +110,7 @@ export const updateProduct = async (id: string, updates: Partial<Product>) => {
 
 export const deleteProduct = async (id: string) => {
   const user = await checkAuth()
-  if (!user) return { success: false, error: '401: Faça login primeiro' }
+  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
 
   const { data, error } = await supabase
     .from('products')
@@ -120,8 +121,8 @@ export const deleteProduct = async (id: string) => {
 
   if (error) {
     const errorMsg =
-      error.code === '42501' ? '42501: Erro RLS. Você não pode deletar este produto' : error.message
-    return { success: false, error: errorMsg }
+      error.code === '42501' ? 'Erro RLS. Você não pode deletar este produto' : error.message
+    return { success: false, error: errorMsg, code: error.code }
   }
 
   const res = { success: true, data }

@@ -15,7 +15,18 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Search, ArrowRight, PackageSearch, Loader2, Settings, Plus, Edit2 } from 'lucide-react'
+import {
+  Search,
+  ArrowRight,
+  PackageSearch,
+  Loader2,
+  Settings,
+  Plus,
+  Edit2,
+  Trash2,
+} from 'lucide-react'
+import { deleteProduct } from '@/services/products'
+import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Select,
@@ -77,6 +88,22 @@ export default function ProductList() {
     0,
   )
 
+  const handleDeleteProduct = async (id: string) => {
+    if (confirm('Tem certeza que deseja deletar este produto?')) {
+      try {
+        const res = await deleteProduct(id)
+        if (res.success) {
+          toast.success('Produto deletado com sucesso')
+          fetchProducts()
+        } else {
+          toast.error(`Erro: ${res.error}`)
+        }
+      } catch (e: any) {
+        toast.error('Erro ao deletar produto')
+      }
+    }
+  }
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -91,7 +118,7 @@ export default function ProductList() {
             <Settings className="mr-2 h-4 w-4" /> Catálogo
           </Button>
           <Button onClick={() => setIsNewProductOpen(true)} className="shadow-elevation">
-            <Plus className="mr-2 h-4 w-4" /> Novo Registro
+            <Plus className="mr-2 h-4 w-4" /> Novo Produto
           </Button>
         </div>
       </div>
@@ -226,6 +253,15 @@ export default function ProductList() {
                           title="Editar Produto"
                         >
                           <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteProduct(product.id)}
+                          title="Deletar Produto"
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                         {product.clients?.id && (
                           <Button variant="ghost" size="sm" asChild>

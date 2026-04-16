@@ -51,10 +51,15 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
   const handleAdd = async () => {
     if (!name) return
     try {
+      setLoading(true)
       let numericValue = value ? parseFloat(value.toString().replace(',', '.')) : 0
       if (isNaN(numericValue)) numericValue = 0
 
-      await createProductType({ name, default_value: numericValue })
+      const res = await createProductType({ name, default_value: numericValue })
+      if (!res.success) {
+        toast.error(`Erro ao adicionar: ${res.error}`)
+        return
+      }
       toast.success('Tipo de produto adicionado')
       setName('')
       setValue('')
@@ -62,32 +67,48 @@ export function ProductTypesDialog({ isOpen, onClose }: { isOpen: boolean; onClo
     } catch (e: any) {
       console.error('Error adding product type:', e)
       toast.error(`Erro ao adicionar: ${e.message || 'Produto já pode existir.'}`)
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleUpdate = async (id: string) => {
     if (!editName) return
     try {
+      setLoading(true)
       let numericValue = editValue ? parseFloat(editValue.toString().replace(',', '.')) : 0
       if (isNaN(numericValue)) numericValue = 0
 
-      await updateProductType(id, { name: editName, default_value: numericValue })
+      const res = await updateProductType(id, { name: editName, default_value: numericValue })
+      if (!res.success) {
+        toast.error(`Erro ao atualizar: ${res.error}`)
+        return
+      }
       toast.success('Tipo de produto atualizado')
       setEditingId(null)
       fetchTypes()
     } catch (e: any) {
       console.error('Error updating product type:', e)
       toast.error(`Erro ao atualizar: ${e.message || 'Já pode existir um com esse nome.'}`)
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteProductType(id)
+      setLoading(true)
+      const res = await deleteProductType(id)
+      if (!res.success) {
+        toast.error(`Erro ao remover: ${res.error}`)
+        return
+      }
       toast.success('Tipo de produto removido')
       fetchTypes()
     } catch (e) {
       toast.error('Erro ao remover tipo de produto')
+    } finally {
+      setLoading(false)
     }
   }
 

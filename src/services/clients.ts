@@ -18,7 +18,8 @@ export async function getClients() {
   if (!user) {
     const err: any = []
     err.success = false
-    err.error = '401: Usuário não autenticado. Faça login primeiro'
+    err.error = 'Faça login primeiro'
+    err.code = '401'
     return err
   }
 
@@ -32,10 +33,8 @@ export async function getClients() {
     console.error('Supabase Error:', error)
     const err: any = []
     err.success = false
-    err.error =
-      error.code === '42501'
-        ? '42501: Erro de política de segurança (RLS). Permissão negada.'
-        : error.message
+    err.error = error.code === '42501' ? 'Permissão negada para listar clientes' : error.message
+    err.code = error.code
     return err
   }
 
@@ -79,7 +78,7 @@ export async function createClient(data: {
   utm_medium?: string
 }) {
   const user = await checkAuth()
-  if (!user) return { success: false, error: '401: Faça login primeiro' }
+  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
 
   const { data: result, error } = await supabase
     .from('clients')
@@ -103,9 +102,9 @@ export async function createClient(data: {
   if (error) {
     const errorMsg =
       error.code === '42501'
-        ? '42501: Erro RLS. Você não tem permissão para criar clientes'
+        ? 'Erro RLS. Você não tem permissão para criar clientes'
         : error.message
-    return { success: false, error: errorMsg }
+    return { success: false, error: errorMsg, code: error.code }
   }
 
   const res = { success: true, data: result }
@@ -115,7 +114,7 @@ export async function createClient(data: {
 
 export async function updateClientPipelineStage(id: string, stage: PipelineStage) {
   const user = await checkAuth()
-  if (!user) return { success: false, error: '401: Faça login primeiro' }
+  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
 
   const { data, error } = await supabase
     .from('clients')
@@ -128,9 +127,8 @@ export async function updateClientPipelineStage(id: string, stage: PipelineStage
     .select()
 
   if (error) {
-    const errorMsg =
-      error.code === '42501' ? '42501: Erro RLS. Este cliente não é seu' : error.message
-    return { success: false, error: errorMsg }
+    const errorMsg = error.code === '42501' ? 'Erro RLS. Este cliente não é seu' : error.message
+    return { success: false, error: errorMsg, code: error.code }
   }
 
   const res = { success: true, data }
@@ -140,7 +138,7 @@ export async function updateClientPipelineStage(id: string, stage: PipelineStage
 
 export async function updateClientOptOut(id: string, optOut: boolean) {
   const user = await checkAuth()
-  if (!user) return { success: false, error: '401: Faça login primeiro' }
+  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
 
   const { data, error } = await supabase
     .from('clients')
@@ -153,12 +151,29 @@ export async function updateClientOptOut(id: string, optOut: boolean) {
     .select()
 
   if (error) {
-    const errorMsg =
-      error.code === '42501' ? '42501: Erro RLS. Este cliente não é seu' : error.message
-    return { success: false, error: errorMsg }
+    const errorMsg = error.code === '42501' ? 'Erro RLS. Este cliente não é seu' : error.message
+    return { success: false, error: errorMsg, code: error.code }
   }
 
   const res = { success: true, data }
   Object.assign(res, data)
   return res
+}
+
+export async function deleteClient(id: string) {
+  const user = await checkAuth()
+  if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
+
+  const { data, error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) {
+    const errorMsg = error.code === '42501' ? 'Erro RLS. Permissão negada' : error.message
+    return { success: false, error: errorMsg, code: error.code }
+  }
+
+  return { success: true, data }
 }
