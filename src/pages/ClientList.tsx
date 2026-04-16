@@ -64,6 +64,7 @@ export default function ClientList() {
     name: '',
     email: '',
     phone: '',
+    avatar: '',
     pipeline_stage: 'Lead',
     behavioral_profile: '',
     notes: '',
@@ -99,6 +100,7 @@ export default function ClientList() {
           name: '',
           email: '',
           phone: '',
+          avatar: '',
           pipeline_stage: 'Lead',
           behavioral_profile: '',
           notes: '',
@@ -313,6 +315,7 @@ export default function ClientList() {
               name: '',
               email: '',
               phone: '',
+              avatar: '',
               pipeline_stage: 'Lead',
               behavioral_profile: '',
               notes: '',
@@ -359,6 +362,15 @@ export default function ClientList() {
                     value={newClientData.phone}
                     onChange={(e) => setNewClientData({ ...newClientData, phone: e.target.value })}
                     placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="avatar">URL do Avatar (Foto de Perfil)</Label>
+                  <Input
+                    id="avatar"
+                    value={newClientData.avatar}
+                    onChange={(e) => setNewClientData({ ...newClientData, avatar: e.target.value })}
+                    placeholder="https://exemplo.com/foto.jpg"
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">

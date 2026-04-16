@@ -845,9 +845,6 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: clients
-//   Policy "authenticated_all_clients" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
 //   Policy "users_delete_own_clients" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
 //   Policy "users_insert_own_clients" (INSERT, PERMISSIVE) roles={authenticated}
@@ -932,9 +929,6 @@ export const Constants = {
 //     USING: true
 //     WITH CHECK: true
 // Table: products
-//   Policy "authenticated_all_products" (ALL, PERMISSIVE) roles={authenticated}
-//     USING: true
-//     WITH CHECK: true
 //   Policy "users_delete_own_products" (DELETE, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
 //   Policy "users_insert_own_products" (INSERT, PERMISSIVE) roles={authenticated}

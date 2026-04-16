@@ -15,17 +15,12 @@ async function checkAuth() {
 export const getProducts = async (clientId?: string) => {
   const user = await checkAuth()
   if (!user) {
-    const err: any = []
-    err.success = false
-    err.error = 'Faça login primeiro'
-    err.code = '401'
-    return err
+    return { success: false, error: 'Faça login primeiro', code: '401' }
   }
 
   let query = supabase
     .from('products')
     .select('*, clients!inner(id, name, avatar, user_id)')
-    .eq('user_id', user.id) // RLS validation
     .is('deleted_at', null)
 
   if (clientId) query = query.eq('client_id', clientId)
@@ -33,11 +28,13 @@ export const getProducts = async (clientId?: string) => {
   const { data, error } = await query.order('created_at', { ascending: false })
 
   if (error) {
-    const err: any = []
-    err.success = false
-    err.error = error.code === '42501' ? 'Erro RLS. Permissão negada' : error.message
-    err.code = error.code
-    return err
+    console.error('Supabase Error:', error)
+    return {
+      success: false,
+      error:
+        error.code === '42501' ? 'Erro RLS: Permissão negada para listar produtos' : error.message,
+      code: error.code,
+    }
   }
 
   const res: any = data || []
@@ -67,14 +64,13 @@ export const createProduct = async (product: Partial<Product>) => {
   if (error) {
     const errorMsg =
       error.code === '42501'
-        ? 'Erro RLS. Você não tem permissão para criar produtos'
+        ? 'Erro RLS: Você não tem permissão para criar produtos'
         : error.message
+    console.error(errorMsg)
     return { success: false, error: errorMsg, code: error.code }
   }
 
-  const res = { success: true, data }
-  Object.assign(res, data)
-  return res
+  return { success: true, data }
 }
 
 export const updateProduct = async (id: string, updates: Partial<Product>) => {
@@ -94,18 +90,16 @@ export const updateProduct = async (id: string, updates: Partial<Product>) => {
     .from('products')
     .update(payload)
     .eq('id', id)
-    .eq('user_id', user.id) // RLS
     .select()
     .single()
 
   if (error) {
-    const errorMsg = error.code === '42501' ? 'Erro RLS. Este produto não é seu' : error.message
+    const errorMsg = error.code === '42501' ? 'Erro RLS: Este produto não é seu' : error.message
+    console.error(errorMsg)
     return { success: false, error: errorMsg, code: error.code }
   }
 
-  const res = { success: true, data }
-  Object.assign(res, data)
-  return res
+  return { success: true, data }
 }
 
 export const deleteProduct = async (id: string) => {
@@ -116,18 +110,16 @@ export const deleteProduct = async (id: string) => {
     .from('products')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('user_id', user.id) // RLS
     .select()
 
   if (error) {
     const errorMsg =
-      error.code === '42501' ? 'Erro RLS. Você não pode deletar este produto' : error.message
+      error.code === '42501' ? 'Erro RLS: Você não pode deletar este produto' : error.message
+    console.error(errorMsg)
     return { success: false, error: errorMsg, code: error.code }
   }
 
-  const res = { success: true, data }
-  Object.assign(res, data)
-  return res
+  return { success: true, data }
 }
 
 export const uploadProductDocument = async (productId: string, file: File) => {

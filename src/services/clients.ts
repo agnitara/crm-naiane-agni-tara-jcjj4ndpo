@@ -16,26 +16,21 @@ async function checkAuth() {
 export async function getClients() {
   const user = await checkAuth()
   if (!user) {
-    const err: any = []
-    err.success = false
-    err.error = 'Faça login primeiro'
-    err.code = '401'
-    return err
+    return { success: false, error: 'Faça login primeiro', code: '401' }
   }
 
   const { data, error } = await supabase
     .from('clients')
     .select('*')
-    .eq('user_id', user.id) // RLS faz isso automaticamente
     .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Supabase Error:', error)
-    const err: any = []
-    err.success = false
-    err.error = error.code === '42501' ? 'Permissão negada para listar clientes' : error.message
-    err.code = error.code
-    return err
+    return {
+      success: false,
+      error: error.code === '42501' ? 'Permissão negada para listar clientes' : error.message,
+      code: error.code,
+    }
   }
 
   const formattedData = data
@@ -59,7 +54,7 @@ export async function getClients() {
       }))
     : []
 
-  // Retorna array enriquecido para compatibilidade com chamadas não refatoradas
+  // Preservando array proxy para compatibilidade, mas retornando no formato padrão
   const res: any = formattedData
   res.success = true
   res.data = formattedData
@@ -70,6 +65,7 @@ export async function createClient(data: {
   name: string
   email?: string
   phone?: string
+  avatar?: string
   pipeline_stage?: string
   behavioral_profile?: string
   notes?: string
@@ -88,6 +84,7 @@ export async function createClient(data: {
       name: data.name,
       email: data.email || null,
       phone: data.phone || null,
+      avatar: data.avatar || null,
       pipeline_stage: data.pipeline_stage || 'Lead',
       behavioral_profile: data.behavioral_profile || null,
       notes: data.notes || null,
@@ -102,14 +99,13 @@ export async function createClient(data: {
   if (error) {
     const errorMsg =
       error.code === '42501'
-        ? 'Erro RLS. Você não tem permissão para criar clientes'
+        ? 'Erro RLS: Você não tem permissão para criar clientes'
         : error.message
+    console.error(errorMsg)
     return { success: false, error: errorMsg, code: error.code }
   }
 
-  const res = { success: true, data: result }
-  Object.assign(res, result)
-  return res
+  return { success: true, data: result }
 }
 
 export async function updateClientPipelineStage(id: string, stage: PipelineStage) {
@@ -123,17 +119,15 @@ export async function updateClientPipelineStage(id: string, stage: PipelineStage
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .eq('user_id', user.id) // RLS
     .select()
 
   if (error) {
-    const errorMsg = error.code === '42501' ? 'Erro RLS. Este cliente não é seu' : error.message
+    const errorMsg = error.code === '42501' ? 'Erro RLS: Este cliente não é seu' : error.message
+    console.error(errorMsg)
     return { success: false, error: errorMsg, code: error.code }
   }
 
-  const res = { success: true, data }
-  Object.assign(res, data)
-  return res
+  return { success: true, data }
 }
 
 export async function updateClientOptOut(id: string, optOut: boolean) {
@@ -147,31 +141,29 @@ export async function updateClientOptOut(id: string, optOut: boolean) {
       updated_at: new Date().toISOString(),
     } as any)
     .eq('id', id)
-    .eq('user_id', user.id) // RLS
     .select()
 
   if (error) {
-    const errorMsg = error.code === '42501' ? 'Erro RLS. Este cliente não é seu' : error.message
+    const errorMsg = error.code === '42501' ? 'Erro RLS: Este cliente não é seu' : error.message
+    console.error(errorMsg)
     return { success: false, error: errorMsg, code: error.code }
   }
 
-  const res = { success: true, data }
-  Object.assign(res, data)
-  return res
+  return { success: true, data }
 }
 
 export async function deleteClient(id: string) {
   const user = await checkAuth()
   if (!user) return { success: false, error: 'Faça login primeiro', code: '401' }
 
-  const { data, error } = await supabase
-    .from('clients')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id)
+  const { data, error } = await supabase.from('clients').delete().eq('id', id)
 
   if (error) {
-    const errorMsg = error.code === '42501' ? 'Erro RLS. Permissão negada' : error.message
+    const errorMsg =
+      error.code === '42501'
+        ? 'Erro RLS: Permissão negada para deletar este cliente'
+        : error.message
+    console.error(errorMsg)
     return { success: false, error: errorMsg, code: error.code }
   }
 
