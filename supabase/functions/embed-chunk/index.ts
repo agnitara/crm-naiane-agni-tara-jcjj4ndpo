@@ -5,15 +5,14 @@ import { pipeline, env } from '@xenova/transformers'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 // Configuração para rodar na Edge
-env.allowLocalModels = false
-env.useBrowserCache = false
+env.allowLocalModels = false;
+env.useBrowserCache = false;
 
-let extractor: any = null
+let extractor: any = null;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -38,7 +37,7 @@ Deno.serve(async (req: Request) => {
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const { error } = await supabaseAdmin
@@ -49,13 +48,13 @@ Deno.serve(async (req: Request) => {
     if (error) throw error
 
     return new Response(JSON.stringify({ success: true, id: record.id }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   } catch (error: any) {
     console.error('Error in embed-chunk:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
