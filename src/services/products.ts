@@ -33,14 +33,21 @@ export async function createProduct(dados: any) {
   } = await supabase.auth.getSession()
   if (!session?.user) return { success: false, error: 'Usuário não autenticado' }
 
-  const { data, error } = await supabase
-    .from('products')
-    .insert({
-      ...dados,
-      user_id: session.user.id,
-    })
-    .select()
-    .single()
+  const payload: any = {
+    name: dados.name,
+    value: dados.value,
+    stage: dados.stage,
+    start_date: dados.startDate,
+    expected_date: dados.expectedDate,
+    user_id: session.user.id,
+  }
+  if (dados.clientId) {
+    payload.client_id = dados.clientId
+  } else {
+    payload.client_id = null
+  }
+
+  const { data, error } = await supabase.from('products').insert(payload).select().single()
 
   if (error) {
     if (error.code === '42501') {
@@ -59,9 +66,17 @@ export async function updateProduct(productId: string, dados: any) {
   } = await supabase.auth.getSession()
   if (!session?.user) return { success: false, error: 'Usuário não autenticado' }
 
+  const payload: any = {}
+  if (dados.name !== undefined) payload.name = dados.name
+  if (dados.value !== undefined) payload.value = dados.value
+  if (dados.stage !== undefined) payload.stage = dados.stage
+  if (dados.startDate !== undefined) payload.start_date = dados.startDate
+  if (dados.expectedDate !== undefined) payload.expected_date = dados.expectedDate
+  if (dados.clientId !== undefined) payload.client_id = dados.clientId || null
+
   const { data, error } = await supabase
     .from('products')
-    .update(dados)
+    .update(payload)
     .eq('id', productId)
     .eq('user_id', session.user.id)
     .select()

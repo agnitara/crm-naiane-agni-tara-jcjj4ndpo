@@ -33,12 +33,18 @@ const productSchema = z
     value: z.coerce.number().min(0, 'Insira um valor válido'),
     stage: z.enum(['Interesse', 'Proposta', 'Negociação', 'Fechado', 'Entregue', 'Upsell']),
     startDate: z.string().min(1, 'Data de início é obrigatória'),
-    expectedDate: z.string().min(1, 'Data de conclusão é obrigatória'),
+    expectedDate: z.string().optional().or(z.literal('')),
   })
-  .refine((data) => new Date(data.expectedDate) >= new Date(data.startDate), {
-    message: 'Data de conclusão deve ser maior ou igual à data de início',
-    path: ['expectedDate'],
-  })
+  .refine(
+    (data) => {
+      if (!data.expectedDate) return true
+      return new Date(data.expectedDate) >= new Date(data.startDate)
+    },
+    {
+      message: 'Data de conclusão deve ser maior ou igual à data de início',
+      path: ['expectedDate'],
+    },
+  )
 
 type ProductFormValues = z.infer<typeof productSchema>
 
@@ -107,8 +113,8 @@ export function ProductDialog({
     try {
       const payload = {
         ...data,
-        startDate: new Date(data.startDate).toISOString(),
-        expectedDate: new Date(data.expectedDate).toISOString(),
+        startDate: data.startDate ? new Date(data.startDate).toISOString() : null,
+        expectedDate: data.expectedDate ? new Date(data.expectedDate).toISOString() : null,
       }
 
       let res
