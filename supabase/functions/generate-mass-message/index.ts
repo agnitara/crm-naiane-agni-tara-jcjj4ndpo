@@ -5,7 +5,8 @@ import OpenAI from 'npm:openai@4'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 Deno.serve(async (req: Request) => {
@@ -20,13 +21,14 @@ Deno.serve(async (req: Request) => {
     if (!kimiApiKey) {
       // Mock response for preview environments without API keys
       console.log('API keys missing, returning mocked response')
-      const mockSuggestion = "Olá {{nome}}! Gostaria de saber como estão os preparativos em relação ao {{produto}}. Teria um momento para conversarmos essa semana?"
-      
+      const mockSuggestion =
+        'Olá {{nome}}! Gostaria de saber como estão os preparativos em relação ao {{produto}}. Teria um momento para conversarmos essa semana?'
+
       // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
       return new Response(JSON.stringify({ suggestion: mockSuggestion }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -48,9 +50,9 @@ Instruções:
 - Você pode usar as variáveis: {{nome}} e {{produto}}.
 - A resposta deve ter entre 50 e 500 caracteres.
 - Idioma: Português do Brasil.
-- Responda APENAS com a sugestão de mensagem, sem aspas, introduções ou notas adicionais.`
+- Responda APENAS com a sugestão de mensagem, sem aspas, introduções ou notas adicionais.`,
         },
-        { role: 'user', content: `Crie uma mensagem com o seguinte objetivo: ${prompt}` }
+        { role: 'user', content: `Crie uma mensagem com o seguinte objetivo: ${prompt}` },
       ],
       temperature: 0.7,
     })
@@ -58,14 +60,13 @@ Instruções:
     const suggestion = completion.choices[0]?.message?.content || ''
 
     return new Response(JSON.stringify({ suggestion }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
-
   } catch (error: any) {
     console.error('Error generating mass message:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })

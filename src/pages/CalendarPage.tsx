@@ -286,6 +286,15 @@ export default function CalendarPage() {
         </Card>
       </div>
 
+      {/* Mobile FAB */}
+      <Button
+        className="fixed bottom-6 right-6 h-14 rounded-full shadow-elevation sm:hidden z-50 px-6 gap-2"
+        onClick={() => setIsEventDialogOpen(true)}
+      >
+        <Plus className="h-5 w-5" />
+        Novo Evento
+      </Button>
+
       <EventDialog
         isOpen={isEventDialogOpen}
         onClose={() => setIsEventDialogOpen(false)}

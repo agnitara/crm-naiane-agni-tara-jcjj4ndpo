@@ -280,6 +280,15 @@ export default function ProductList() {
         </div>
       </Card>
 
+      {/* Mobile FAB */}
+      <Button
+        className="fixed bottom-6 right-6 h-14 rounded-full shadow-elevation sm:hidden z-50 px-6 gap-2"
+        onClick={() => setIsNewProductOpen(true)}
+      >
+        <Plus className="h-5 w-5" />
+        Novo Produto
+      </Button>
+
       <ProductTypesDialog isOpen={isTypesOpen} onClose={() => setIsTypesOpen(false)} />
       <ProductDialog
         isOpen={isNewProductOpen || !!editingProduct}
