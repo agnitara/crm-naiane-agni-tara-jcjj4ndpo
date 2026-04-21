@@ -6,8 +6,7 @@ import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
 }
 
 env.allowLocalModels = false
@@ -27,7 +26,7 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
     // Check for recent pending suggestions
@@ -43,7 +42,7 @@ Deno.serve(async (req: Request) => {
       const ageInMs = new Date().getTime() - new Date(existing[0].created_at).getTime()
       if (ageInMs < 2 * 60 * 1000) {
         return new Response(JSON.stringify({ message: 'Recent suggestions exist' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
     }
@@ -56,12 +55,7 @@ Deno.serve(async (req: Request) => {
       .eq('status', 'pending')
 
     const { data: client } = await supabase.from('clients').select('*').eq('id', client_id).single()
-    const { data: messages } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('client_id', client_id)
-      .order('created_at', { ascending: false })
-      .limit(10)
+    const { data: messages } = await supabase.from('messages').select('*').eq('client_id', client_id).order('created_at', { ascending: false }).limit(10)
 
     if (!client) throw new Error('Client not found')
 
@@ -80,9 +74,9 @@ Deno.serve(async (req: Request) => {
           const { data: chunks } = await supabase.rpc('match_knowledge_chunks', {
             query_embedding,
             match_threshold: 0.7,
-            match_count: 3,
+            match_count: 3
           })
-
+          
           if (chunks && chunks.length > 0) {
             contextText = chunks.map((c: any) => c.content).join('\n\n')
           }
@@ -97,17 +91,16 @@ Deno.serve(async (req: Request) => {
       suggestions = [
         {
           type: 'reply',
-          content:
-            'Olá! Entendi perfeitamente sua dúvida. Podemos agendar uma breve call para eu te explicar como a mentoria vai resolver exatamente esse ponto?',
+          content: 'Olá! Entendi perfeitamente sua dúvida. Podemos agendar uma breve call para eu te explicar como a mentoria vai resolver exatamente esse ponto?',
           description: 'Sugerir uma call para fechamento',
-          reason: 'Cliente demonstra interesse mas ainda tem dúvidas pontuais.',
+          reason: 'Cliente demonstra interesse mas ainda tem dúvidas pontuais.'
         },
         {
           type: 'pipeline_stage',
           content: 'Negociação',
           description: 'Mover para Negociação',
-          reason: 'A conversa evoluiu para discussão de formato e valores.',
-        },
+          reason: 'A conversa evoluiu para discussão de formato e valores.'
+        }
       ]
     } else {
       const kimi = new OpenAI({
@@ -115,13 +108,7 @@ Deno.serve(async (req: Request) => {
         baseURL: 'https://api.moonshot.cn/v1',
       })
 
-      const msgsText = (messages || [])
-        .reverse()
-        .map(
-          (m: any) =>
-            `${m.direction === 'inbound' ? 'Cliente' : 'Atendente'}: ${m.content || m.transcription || 'Áudio/Mídia'}`,
-        )
-        .join('\n')
+      const msgsText = (messages || []).reverse().map((m: any) => `${m.direction === 'inbound' ? 'Cliente' : 'Atendente'}: ${m.content || m.transcription || 'Áudio/Mídia'}`).join('\n')
 
       const prompt = `Você é um assistente de vendas de CRM inteligente auxiliando Naiane.
 Analise a conversa recente com o cliente:
@@ -155,7 +142,7 @@ Restrições:
         model: 'moonshot-v1-8k',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
-        response_format: { type: 'json_object' },
+        response_format: { type: "json_object" }
       })
 
       try {
@@ -173,7 +160,7 @@ Restrições:
         content: s.content,
         description: s.description,
         reason: s.reason,
-        status: 'pending',
+        status: 'pending'
       }))
 
       const { data: inserted, error: insertError } = await supabase
@@ -184,18 +171,19 @@ Restrições:
       if (insertError) throw insertError
 
       return new Response(JSON.stringify({ suggestions: inserted }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     return new Response(JSON.stringify({ suggestions: [] }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
+
   } catch (error: any) {
     console.error('Error generating client suggestions:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
